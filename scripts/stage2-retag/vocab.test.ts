@@ -2,7 +2,11 @@
  * Tests for the Stage 2 re-tag canonical vocab assembly (task A3, TDD).
  *
  * Spelling sources (locked — design doc §4 OQ2 + supervisor resolution
- * 2026-06-12 on the observances merge): `src/utils/filterDefinitions.ts` and
+ * 2026-06-12 on the observances merge): `src/types/lessonMetadata.zod.ts`
+ * (the canonical closed-enum `*_VALUES` lists — `src/utils/filterDefinitions.ts`
+ * now DERIVES its option lists from them instead of inlining literals, so the
+ * zod file is the source to transcribe from), `src/utils/filterDefinitions.ts`
+ * (labels / historical spellings) and
  * `docs/plans/pr6-stage2-retag-evidence/oq2-smaller-fields-census.md` §1/§5.
  * Every literal below is transcribed verbatim from those files — never from
  * memory.

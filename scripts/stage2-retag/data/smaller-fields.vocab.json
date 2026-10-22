@@ -1,6 +1,6 @@
 {
   "provenance": {
-    "locked_by": "docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md §4 OQ2 (Session-2 walkthrough, user-locked 2026-06-11) + supervisor resolution 2026-06-12 (End-of-year merge yields 16 observances; 'End of year celebrations' survives)",
+    "locked_by": "docs/plans/2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md §4 OQ2 (Session-2 walkthrough, user-locked 2026-06-11) + supervisor resolution 2026-06-12 (End-of-year merge yields 16 observances; 'End of year celebrations' survives) + owner amendment 2026-08-17 ('Arab American Heritage Month' added as the 17th observance — see notes; docs/reports/2026-08-17-arab-american-heritage-month-candidate-audit.md)",
     "spelling_sources": [
       "src/utils/filterDefinitions.ts",
       "docs/plans/pr6-stage2-retag-evidence/oq2-smaller-fields-census.md §1/§5"

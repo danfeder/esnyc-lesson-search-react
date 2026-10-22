@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
+import {
+  ACADEMIC_INTEGRATION_VALUES,
+  COOKING_SKILLS_VALUES,
+  CORE_COMPETENCIES_VALUES,
+  CULTURAL_RESPONSIVENESS_FEATURE_VALUES,
+  GARDEN_SKILLS_VALUES,
+  OBSERVANCES_HOLIDAYS_VALUES,
+  SEASON_TIMING_VALUES,
+  SOCIAL_EMOTIONAL_LEARNING_VALUES,
+} from '@/types/lessonMetadata.zod';
 import { ALL_FIELD_CONFIGS, FILTER_CONFIGS, FILTER_KEYS } from './filterDefinitions';
-
-const DEFERRED_OBSERVANCE = 'Arab American Heritage Month';
 
 // mainIngredients was promoted from METADATA_CONFIGS to FILTER_CONFIGS (Brief 5).
 // METADATA_CONFIGS is now module-private + METADATA_KEYS was removed (F3 dead-export
@@ -60,14 +68,6 @@ describe('Filter Definitions Compliance', () => {
       expect(cfg.options.some((o) => (o.children?.length ?? 0) > 0)).toBe(true);
     });
 
-    it('keeps the new observance out of the reviewer UI until the UI rollout', () => {
-      const visibleObservances = ALL_FIELD_CONFIGS.observancesHolidays.options.map(
-        (option) => option.value
-      );
-      expect(visibleObservances).toHaveLength(16);
-      expect(visibleObservances).not.toContain(DEFERRED_OBSERVANCE);
-    });
-
     // value === label is load-bearing for mainIngredients: the reviewer form's
     // chip-label map and IntActivePills both fall back to the raw value for a
     // NESTED specific (their flat `.options.find()` only sees top-level nodes),
@@ -90,6 +90,54 @@ describe('Filter Definitions Compliance', () => {
         }>
       );
       expect(offenders).toEqual([]);
+    });
+  });
+
+  // Audit §6.3: every flat closed-enum option list is DERIVED from its exported
+  // *_VALUES in lessonMetadata.zod.ts (the single canonical source that the
+  // edge mirror, enums.json and the SQL CHECKs are synced to). These tests pin
+  // (1) set-equality — the vocabulary can never drift from the canon — and
+  // (2) array equality — the UI order IS the canonical order and value===label.
+  // A list whose UI order must differ from its *_VALUES order is NOT in this
+  // table (see the culturalResponsivenessFeatures test below).
+  describe('Canonical vocabulary derivation (audit §6.3)', () => {
+    const DERIVED_LISTS = [
+      ['seasonTiming', SEASON_TIMING_VALUES],
+      ['academicIntegration', ACADEMIC_INTEGRATION_VALUES],
+      ['socialEmotionalLearning', SOCIAL_EMOTIONAL_LEARNING_VALUES],
+      ['coreCompetencies', CORE_COMPETENCIES_VALUES],
+      ['gardenSkills', GARDEN_SKILLS_VALUES],
+      ['observancesHolidays', OBSERVANCES_HOLIDAYS_VALUES],
+      ['cookingSkills', COOKING_SKILLS_VALUES],
+    ] as const;
+
+    it.each(DERIVED_LISTS)(
+      '%s options are set-equal to the canonical *_VALUES',
+      (key, canonical) => {
+        const values = ALL_FIELD_CONFIGS[key].options.map((o) => o.value);
+        expect(new Set(values)).toEqual(new Set(canonical));
+        expect(values).toHaveLength(canonical.length); // no duplicates either side
+      }
+    );
+
+    it.each(DERIVED_LISTS)(
+      '%s options are array-equal to the canonical *_VALUES (order + value===label)',
+      (key, canonical) => {
+        expect(ALL_FIELD_CONFIGS[key].options).toEqual(
+          canonical.map((value) => ({ value, label: value }))
+        );
+      }
+    );
+
+    // Intentional order divergence (audit §6.3): CRF stays hand-listed because
+    // the reviewer UI order differs from the v3-taxonomy order kept in
+    // CULTURAL_RESPONSIVENESS_FEATURE_VALUES. Lock the VOCABULARY (set) only.
+    it('culturalResponsivenessFeatures options are set-equal to the canonical values (UI order intentionally differs)', () => {
+      const options = ALL_FIELD_CONFIGS.culturalResponsivenessFeatures.options;
+      const values = options.map((o) => o.value);
+      expect(new Set(values)).toEqual(new Set(CULTURAL_RESPONSIVENESS_FEATURE_VALUES));
+      expect(values).toHaveLength(CULTURAL_RESPONSIVENESS_FEATURE_VALUES.length);
+      for (const o of options) expect(o.label).toBe(o.value);
     });
   });
 

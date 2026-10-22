@@ -9,7 +9,7 @@
  * IntPillGroup ariaLabel) — scope every query to that group, case-exact, so a
  * stale label never silently matches the wrong control.
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { useRef, useState } from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -18,6 +18,7 @@ import { ReviewMetadataForm, type ReviewMetadataInputIds } from './ReviewMetadat
 import type { ReviewMetadata } from '@/types';
 
 const SEI = 'Social-Emotional Intelligence';
+const ARAB_AMERICAN_HERITAGE_MONTH = 'Arab American Heritage Month';
 
 const inputIds: ReviewMetadataInputIds = {
   heritage: 'heritage',
@@ -33,17 +34,23 @@ function Harness({
   initialMetadata,
   showLegacySocialEmotionalIntelligence,
   validationErrors = [],
+  onFieldChange,
 }: {
   initialMetadata: ReviewMetadata;
   showLegacySocialEmotionalIntelligence: boolean;
   validationErrors?: string[];
+  /** Optional spy on every form-state write (key, value) — lets a test pin state, not DOM text. */
+  onFieldChange?: (key: keyof ReviewMetadata, value: unknown) => void;
 }) {
   const [metadata, setMetadata] = useState<ReviewMetadata>(initialMetadata);
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   return (
     <ReviewMetadataForm
       metadata={metadata}
-      onChange={(key, value) => setMetadata((prev) => ({ ...prev, [key]: value }))}
+      onChange={(key, value) => {
+        setMetadata((prev) => ({ ...prev, [key]: value }));
+        onFieldChange?.(key, value);
+      }}
       inputIds={inputIds}
       showCookingFields={false}
       showGardenFields={false}
@@ -98,6 +105,42 @@ describe('ReviewMetadataForm — legacy Social-Emotional Intelligence pill (FP5 
     expect(within(competencyGroup()).getByRole('button', { name: SEI })).toHaveAttribute(
       'aria-pressed',
       'true'
+    );
+  });
+});
+
+describe('ReviewMetadataForm — observances', () => {
+  it('offers and selects Arab American Heritage Month', async () => {
+    const user = userEvent.setup();
+    const onFieldChange = vi.fn();
+    render(
+      <Harness
+        initialMetadata={{}}
+        showLegacySocialEmotionalIntelligence={false}
+        onFieldChange={onFieldChange}
+      />
+    );
+
+    const observances = screen.getByLabelText('Observances & holidays');
+    await user.click(observances);
+    await user.type(observances, 'Arab American');
+    await user.click(await screen.findByRole('option', { name: ARAB_AMERICAN_HERITAGE_MONTH }));
+
+    // Pin FORM STATE: the option click must have written the value through
+    // onChange. A no-op click (menu text still in the DOM) never fires this.
+    expect(onFieldChange).toHaveBeenCalledWith('observancesHolidays', [
+      ARAB_AMERICAN_HERITAGE_MONTH,
+    ]);
+
+    // Pin the SELECTED-CHIP container, not the whole document: react-select
+    // renders chips inside `<prefix>__value-container` (which also holds the
+    // input) and menu options OUTSIDE it, so a still-open menu can't satisfy
+    // these assertions.
+    const valueContainer = observances.closest('.adm-rs__value-container');
+    expect(valueContainer).not.toBeNull();
+    expect(valueContainer).toHaveTextContent(ARAB_AMERICAN_HERITAGE_MONTH);
+    expect(valueContainer).toContainElement(
+      screen.getByRole('button', { name: `Remove ${ARAB_AMERICAN_HERITAGE_MONTH}` })
     );
   });
 });
