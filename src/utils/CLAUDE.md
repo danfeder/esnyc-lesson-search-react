@@ -8,6 +8,7 @@
 | `heritageHierarchy.generated.ts` | Generated cultural-heritage hierarchy (do not hand-edit) |
 | `logger.ts` | Use instead of console.log |
 | `cn.ts` | Tailwind class merging |
+| `invitationEmail.ts` | Invitation email payload + role→permissions (single source for invite and resend) |
 
 ## Cultural Heritage Hierarchy
 

@@ -6,7 +6,7 @@ import { AuthModal } from '@/components/Auth/AuthModal';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { Permission } from '@/types/auth';
 import { useSearchStore } from '@/stores/searchStore';
-import { debounce } from '@/utils/debounce';
+import { useDebounce } from '@/hooks/useDebounce';
 
 interface HeaderProps {
   /** Retained for backwards compatibility with the old stats display; unused
@@ -167,24 +167,26 @@ function HeaderSearch() {
   const filters = useSearchStore((s) => s.filters);
   const setFilters = useSearchStore((s) => s.setFilters);
   const [localQuery, setLocalQuery] = useState(filters.query);
+  // Debounce a fresh wrapper per edit rather than the bare string: a string
+  // that settles to the same value twice (store cleared, then the same query
+  // retyped inside the window) is bailed out by React and would never reach
+  // the store.
+  const pendingQuery = useMemo(() => ({ query: localQuery }), [localQuery]);
+  const debounced = useDebounce(pendingQuery, 300);
 
+  // Store → input: URL hydration, chip clears and Back/Forward all land here.
   useEffect(() => {
     setLocalQuery(filters.query);
   }, [filters.query]);
 
-  const debouncedSearch = useMemo(
-    () =>
-      debounce((query: string) => {
-        setFilters({ query });
-      }, 300),
-    [setFilters]
-  );
-
+  // Input → store, debounced. Compare against the LIVE store value via
+  // getState() — `filters.query` must NOT be a dependency here: an external
+  // store change would re-run this effect with a stale debounced value and
+  // clobber the external value.
   useEffect(() => {
-    return () => {
-      debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
+    if (debounced.query === useSearchStore.getState().filters.query) return;
+    setFilters({ query: debounced.query });
+  }, [debounced, setFilters]);
 
   return (
     <div className="int-search">
@@ -192,10 +194,7 @@ function HeaderSearch() {
       <input
         type="text"
         value={localQuery}
-        onChange={(e) => {
-          setLocalQuery(e.target.value);
-          debouncedSearch(e.target.value);
-        }}
+        onChange={(e) => setLocalQuery(e.target.value)}
         placeholder="Search title, summary, ingredient, skill…"
         aria-label="Search lessons"
       />

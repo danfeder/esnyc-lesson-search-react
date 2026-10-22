@@ -136,7 +136,7 @@ supabase functions serve detect-duplicates --no-verify-jwt
 
 2. **Unit Tests**:
 ```bash
-npm test -- similarity.test.ts
+npx vitest run supabase/functions/detect-duplicates/similarity.test.ts
 ```
 
 3. **Manual Testing**:

@@ -6,6 +6,7 @@ import { Permission, UserInvitation } from '@/types/auth';
 import { Download, Plus, Search, Send, XCircle } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { logger } from '@/utils/logger';
+import { sendInvitationEmail } from '@/utils/invitationEmail';
 import {
   IntAlert,
   IntButton,
@@ -51,45 +52,6 @@ const EMPTY_COPY: Record<InvitationFilter, { title: string; body: string }> = {
 const EXPIRING_SOON_MS = 48 * 60 * 60 * 1000;
 
 type Toast = { kind: 'success' | 'error' | 'info'; msg: string };
-
-const PERMISSIONS_FOR_ROLE: Record<string, string[]> = {
-  teacher: ['view_lessons', 'submit_lessons'],
-  reviewer: [
-    'view_lessons',
-    'submit_lessons',
-    'review_lessons',
-    'approve_lessons',
-    'view_analytics',
-  ],
-  admin: [
-    'view_lessons',
-    'submit_lessons',
-    'review_lessons',
-    'approve_lessons',
-    'delete_lessons',
-    'view_users',
-    'invite_users',
-    'edit_users',
-    'view_analytics',
-    'export_data',
-  ],
-  super_admin: [
-    'view_lessons',
-    'submit_lessons',
-    'review_lessons',
-    'approve_lessons',
-    'delete_lessons',
-    'view_users',
-    'invite_users',
-    'edit_users',
-    'view_analytics',
-    'export_data',
-  ],
-};
-
-function getPermissionsForRole(role: string): string[] {
-  return PERMISSIONS_FOR_ROLE[role] ?? ['view_lessons', 'submit_lessons'];
-}
 
 function statusOf(inv: UserInvitation): 'accepted' | 'expired' | 'pending' {
   if (inv.accepted_at) return 'accepted';
@@ -200,29 +162,15 @@ export function AdminInvitations() {
           .select('full_name')
           .eq('id', user.id)
           .single();
-        // supabase.functions.invoke resolves (does not throw) on a non-2xx
-        // response — the failure surfaces in `error`, not the catch. Check it
-        // explicitly so we never report "delivered" when send-email actually
-        // failed (e.g. the Resend sandbox rejecting a non-owner recipient).
-        const { error: emailError } = await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'invitation',
-            to: inv.email,
-            data: {
-              invitationId: inv.id,
-              token: inv.token,
-              inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
-              role: inv.role,
-              permissions: getPermissionsForRole(inv.role),
-              expiresAt: newExpiresAt,
-            },
-          },
+        const delivered = await sendInvitationEmail({
+          to: inv.email,
+          invitationId: inv.id,
+          token: inv.token,
+          inviterName: inviterProfile.data?.full_name || user.email || 'Admin',
+          role: inv.role,
+          expiresAt: newExpiresAt,
         });
-        if (emailError) {
-          logger.error('Failed to resend invitation email:', emailError);
-          return { emailDelivered: false };
-        }
-        return { emailDelivered: true };
+        return { emailDelivered: delivered };
       } catch (emailError) {
         logger.error('Failed to resend invitation email:', emailError);
         return { emailDelivered: false };
