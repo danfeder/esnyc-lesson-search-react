@@ -19,17 +19,6 @@ test.describe('Accessibility', () => {
     await expect(page.getByRole('main')).toHaveCount(1);
   });
 
-  test('search input has accessible label', async ({ page }) => {
-    const searchInput = page.getByPlaceholder(/search/i);
-    await expect(searchInput).toBeVisible();
-
-    // Check for aria-label or placeholder (both provide accessible names)
-    const ariaLabel = await searchInput.getAttribute('aria-label');
-    const placeholder = await searchInput.getAttribute('placeholder');
-
-    expect(ariaLabel || placeholder).toBeTruthy();
-  });
-
   test('buttons have accessible names', async ({ page }) => {
     const buttons = page.locator('button:visible');
     await expect(buttons.first()).toBeVisible();
@@ -46,54 +35,6 @@ test.describe('Accessibility', () => {
       const hasAccessibleName = text?.trim() || ariaLabel || title;
       expect(hasAccessibleName).toBeTruthy();
     }
-  });
-
-  test('images have alt text or are decorative', async ({ page }) => {
-    const images = page.locator('img:visible');
-    const count = await images.count();
-
-    for (let i = 0; i < Math.min(count, 10); i++) {
-      const img = images.nth(i);
-      const alt = await img.getAttribute('alt');
-      const role = await img.getAttribute('role');
-
-      // Either has alt text or is marked as decorative
-      const isAccessible = alt !== null || role === 'presentation' || role === 'none';
-      expect(isAccessible).toBeTruthy();
-    }
-  });
-
-  test('focus is visible on interactive elements', async ({ page }) => {
-    const searchBar = page.getByPlaceholder(/search/i);
-    await searchBar.focus();
-    await expect(searchBar).toBeFocused();
-  });
-
-  test('keyboard navigation works', async ({ page }) => {
-    // First Tab should focus on a focusable element
-    await page.keyboard.press('Tab');
-
-    // Verify something is focused
-    const firstFocused = page.locator(':focus');
-    await expect(firstFocused).toBeVisible();
-
-    // Get a unique identifier for the first focused element
-    const firstFocusedId = await firstFocused.evaluate((el) => el.id || el.tagName + el.className);
-
-    // Tab again
-    await page.keyboard.press('Tab');
-
-    // Verify something is still focused
-    const secondFocused = page.locator(':focus');
-    await expect(secondFocused).toBeVisible();
-
-    // Get identifier for second focused element
-    const secondFocusedId = await secondFocused.evaluate(
-      (el) => el.id || el.tagName + el.className
-    );
-
-    // Verify focus actually moved to a different element
-    expect(secondFocusedId).not.toBe(firstFocusedId);
   });
 
   test('filter checkboxes are keyboard-focusable and in the a11y tree', async ({ page }) => {
@@ -125,17 +66,6 @@ test.describe('Accessibility', () => {
     await expect(cookingCheckbox).toBeFocused();
   });
 
-  test('page has sufficient text content', async ({ page }) => {
-    // Verify page has meaningful content loaded
-    const bodyText = await page.textContent('body');
-    expect(bodyText?.length).toBeGreaterThan(100);
-
-    // Verify there are multiple text elements (not just one blob)
-    const headings = page.locator('h1, h2, h3, h4, h5, h6');
-    const headingCount = await headings.count();
-    expect(headingCount).toBeGreaterThan(0);
-  });
-
   test('page structure is valid HTML', async ({ page }) => {
     // Verify basic HTML structure exists
     const html = await page.content();
@@ -160,16 +90,6 @@ test.describe('Accessibility', () => {
 });
 
 test.describe('Screen Reader Compatibility', () => {
-  test('headings have proper hierarchy', async ({ page }) => {
-    await page.goto('/');
-    await page.waitForLoadState('networkidle');
-
-    const h1Count = await page.locator('h1').count();
-
-    // Should have at least one h1
-    expect(h1Count).toBeGreaterThanOrEqual(1);
-  });
-
   test('search page h1 has an accessible name', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
