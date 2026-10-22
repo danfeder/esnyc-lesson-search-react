@@ -170,7 +170,6 @@ test-*.sql
 backups/
 
 # Supabase local config
-supabase/config.toml
 supabase/.branches/
 supabase/.temp/
 
