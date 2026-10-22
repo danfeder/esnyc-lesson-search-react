@@ -7,9 +7,7 @@ on:
       - 'supabase/migrations/**/*.sql'
       - 'supabase/functions/**/*.ts'
       - 'src/lib/supabase.ts'
-      - 'src/types/database.ts'
       - 'src/types/database.types.ts'
-      - '**/*supabase*.ts'
 
 jobs:
   claude-database-review:
@@ -55,7 +53,7 @@ jobs:
             ## Performance Critical Areas:
             - Full-text search indexes (tsvector) properly configured
             - Composite indexes for filter combinations
-            - Query performance for 831+ lessons
+            - Query performance for the lesson corpus
             - Avoid N+1 queries in Edge Functions
             - Connection pooling considerations
             

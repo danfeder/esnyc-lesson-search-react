@@ -7,12 +7,11 @@ This guide covers setting up CI/CD and deploying the ESYNYC Lesson Search React 
 The project includes comprehensive GitHub Actions workflows for:
 
 ### 1. **Main CI/CD Pipeline** (`.github/workflows/ci.yml`)
-- **Testing**: Runs on Node.js 18.x and 20.x
+- **Testing**: Runs on Node.js 20.x
 - **Type Checking**: TypeScript validation
 - **Linting**: Code quality checks
 - **Building**: Production builds
-- **Preview Deployments**: Automatic PR previews
-- **Production Deployment**: Auto-deploy on main branch
+- **Deploys**: handled by the Netlify GitHub app (deploy previews + production on `main`), not by this workflow
 
 ### 2. **Security & Dependencies** (`.github/workflows/security.yml`)
 - **Security Audits**: Weekly vulnerability scans
@@ -21,7 +20,6 @@ The project includes comprehensive GitHub Actions workflows for:
 
 ### 3. **Performance Monitoring** (`.github/workflows/performance.yml`)
 - **Lighthouse CI**: Performance, accessibility, SEO checks
-- **Bundle Analysis**: Bundle size monitoring
 
 ### 4. **Automated Updates**
 - **Dependabot**: Weekly dependency updates
@@ -39,30 +37,12 @@ VITE_SUPABASE_URL=https://your-project-ref.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 
-#### Netlify Deployment (Optional)
-```
-NETLIFY_AUTH_TOKEN=your-netlify-auth-token
-NETLIFY_SITE_ID=your-netlify-site-id
-```
-
 #### Vercel Deployment (Optional)
 ```
 VERCEL_TOKEN=your-vercel-token
 VERCEL_ORG_ID=your-vercel-org-id
 VERCEL_PROJECT_ID=your-vercel-project-id
 ```
-
-### Getting Netlify Tokens
-
-1. **Auth Token**:
-   - Go to [Netlify User Settings](https://app.netlify.com/user/applications)
-   - Generate a new personal access token
-   - Copy the token
-
-2. **Site ID**:
-   - Create a new site on Netlify (or use existing)
-   - Go to Site Settings > General
-   - Copy the Site ID
 
 ### Getting Vercel Tokens
 
@@ -178,9 +158,8 @@ npm audit fix
 ## 🔄 Workflow Triggers
 
 ### CI/CD Pipeline Runs On:
-- **Push to main**: Full CI + Production deployment
-- **Pull Requests**: Full CI + Preview deployment
-- **Push to develop**: Full CI only
+- **Push to main**: type-check, lint, unit tests, build (production deploy is the Netlify GitHub app)
+- **Pull Requests**: same checks (deploy preview is the Netlify GitHub app)
 
 ### Security Scans Run On:
 - **Weekly schedule**: Monday 9 AM UTC
