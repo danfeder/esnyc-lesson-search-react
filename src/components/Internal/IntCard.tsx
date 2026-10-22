@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
 import { cn } from '@/utils/cn';
@@ -41,11 +40,13 @@ export function IntCard({ lesson, selected, onClick }: IntCardProps) {
       {segments.length > 0 && (
         <div className="int-card-meta">
           {segments.map((segment, i) => (
+            // One flex item per segment, dot INSIDE it, so a wrapped segment carries its
+            // dot to the new line instead of leaving it dangling at the end of the old one.
             // Index keys: segment strings are distinct in practice but nothing guarantees it.
-            <Fragment key={i}>
+            <span key={i}>
               {i > 0 && <span className="dot">·</span>}
               <span>{segment}</span>
-            </Fragment>
+            </span>
           ))}
         </div>
       )}

@@ -331,6 +331,12 @@ describe('IntListRow meta line render (row labels 2026-10-21)', () => {
     expect(container.querySelectorAll('.int-row-meta .dot')).toHaveLength(
       intMetaSegments(sample3AfricanAmericanFoodTraditions).length
     );
+    // Each dot is bound to its segment (same flex item), so a wrapped segment takes
+    // its dot along instead of stranding it at the end of the previous line.
+    const segments = intMetaSegments(sample3AfricanAmericanFoodTraditions);
+    container.querySelectorAll('.int-row-meta .dot').forEach((dot, i) => {
+      expect(dot.parentElement?.textContent).toBe(`·${segments[i]}`);
+    });
   });
 
   it('Sample 2 reads "Year-round · Seed starting" with no "Plant Growth"', () => {

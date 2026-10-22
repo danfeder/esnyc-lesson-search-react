@@ -412,7 +412,7 @@
   font-variant-numeric: tabular-nums;
 }
 .int-row-meta span { display: inline-flex; align-items: center; gap: 4px; }
-.int-row-meta .dot { color: var(--color-esy-ink-30); }
+.int-row-meta .dot { color: var(--color-esy-ink-30); margin-right: 12px; }
 .int-row-meta .activity {
   color: var(--color-esy-green);
   font-weight: 500;
@@ -778,7 +778,7 @@
   padding-top: 6px;
   border-top: 1px dashed var(--color-esy-ink-10);
 }
-.int-card-meta .dot { color: var(--color-esy-ink-30); }
+.int-card-meta .dot { color: var(--color-esy-ink-30); margin-right: 10px; }
 
 /* --- Split-view detail rail ---------------------------------------- */
 .int-detail {

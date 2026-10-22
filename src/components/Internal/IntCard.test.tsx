@@ -43,6 +43,11 @@ describe('IntCard footer (row labels 2026-10-21 — same segments as the list ro
     expect(container.querySelectorAll('.int-card-meta .dot')).toHaveLength(
       intMetaSegments(cookLesson).length - 1
     );
+    // Each dot is bound to the segment it precedes (same flex item) — see IntListRow.
+    const cookSegments = intMetaSegments(cookLesson);
+    container.querySelectorAll('.int-card-meta .dot').forEach((dot, i) => {
+      expect(dot.parentElement?.textContent).toBe(`·${cookSegments[i + 1]}`);
+    });
     const single = lessonWith({ seasonTiming: ['Spring'] });
     const { container: c2 } = render(
       <IntCard lesson={single} selected={false} onClick={() => {}} />

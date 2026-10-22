@@ -1,4 +1,3 @@
-import { Fragment } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
@@ -208,11 +207,13 @@ export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
         <div className="int-row-meta">
           <span className={`activity ${activity.className}`}>{activity.label}</span>
           {segments.map((segment, i) => (
+            // One flex item per segment, dot INSIDE it, so a wrapped segment carries its
+            // dot to the new line instead of leaving it dangling at the end of the old one.
             // Index keys: segment strings are distinct in practice but nothing guarantees it.
-            <Fragment key={i}>
+            <span key={i}>
               <span className="dot">·</span>
               <span>{segment}</span>
-            </Fragment>
+            </span>
           ))}
         </div>
       </div>
