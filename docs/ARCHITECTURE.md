@@ -727,88 +727,135 @@ ORDER BY
 
 ### 5.1 Current Architecture
 
-**Zustand** (`searchStore.ts`): UI state ONLY
+Three places hold search state, each with one job:
+
+- **Zustand** (`src/stores/searchStore.ts`) — what the user asked to see: filters, sort, and layout preferences.
+- **React Query** (`src/hooks/useLessonSearch.ts`) — what the server returned: result pages, total count, loading/error state. Pagination lives here, as the infinite query's `pageParam`.
+- **The URL** (`src/hooks/useUrlSync.ts` + `src/utils/urlParams.ts`) — the shareable projection of filters + sort, kept equal to the store in both directions.
+
+**Zustand store** — UI state only, no results and no page number:
 ```typescript
+// src/stores/searchStore.ts
 interface SearchState {
-  filters: SearchFilters;    // User-selected filters
-  viewState: {
-    sortBy: 'relevance' | 'title' | 'confidence' | 'grade' | 'modified';
-    resultsPerPage: 20 | 50 | 100;
-    currentPage: 1;  // Reset to 1 on filter change
-  };
-  // Actions: setFilters, clearFilters, toggleFilter
+  filters: SearchFilters;   // query + 11 facet arrays (src/types/index.ts)
+  viewState: ViewState;
+
+  setFilters: (filters: Partial<SearchFilters>) => void;  // merge
+  clearFilters: () => void;           // FULL reset (query + sort too): tests/teardown, not the UI
+  clearFilterSelections: () => void;  // Filters-panel "Clear all": facets only; query + sort survive (D-E)
+  setViewState: (viewState: Partial<ViewState>) => void;
+  // URL → store: fully REPLACES filters and applies sort in ONE write (W1c)
+  hydrateUrlState: (urlFilters: Partial<SearchFilters>, sortBy: ViewState['sortBy']) => void;
+  addFilter / removeFilter / toggleFilter: (key: keyof SearchFilters, value: string) => void;
+}
+
+// src/types/index.ts
+interface ViewState {
+  sortBy: 'title' | 'modified' | 'relevance';  // mirrors the search_lessons order_by whitelist
+  view: 'list' | 'grid' | 'split';
+  density: 'comfy' | 'compact' | 'ultra';
 }
 ```
 
-**React Query**: Server state (results, submissions, users)
+There is no page-number or page-size field in the store. A filter or sort change rebuilds the React Query key, which restarts the query at page 0 on its own; page size is an option of `useLessonSearch`, not state.
+
+**Persistence**: the store is wrapped in Zustand `persist` (localStorage key `esy-search-ui`), but `partialize` writes only `viewState.view` and `viewState.density`. Filters, the typed query and the sort are never persisted — the URL is their persistence (shareable, refresh-safe, Back/Forward-safe), and a stale sort or filter quietly reappearing on the next visit was judged worse than starting clean. `merge` spreads the persisted slice over the defaults so fields added later start at their defaults.
+
+**React Query** — the search hook signature and the parts of its config that shape behaviour:
 ```typescript
-const { data, fetchNextPage, hasNextPage } = useInfiniteQuery({
-  queryKey: ['lessons', filters, pageSize],
-  queryFn: ({ pageParam = 0 }) =>
-    supabase.rpc('search_lessons', {
-      ...filters,
-      page_size: pageSize,
-      page_offset: pageParam
-    }),
-  getNextPageParam: (lastPage, pages) =>
-    pages.length * pageSize < lastPage[0]?.total_count
-      ? pages.length * pageSize
-      : undefined
-});
+// src/hooks/useLessonSearch.ts
+useLessonSearch({ filters, pageSize = 20, sortBy = 'relevance', enabled = true })
+  → useInfiniteQuery({
+      queryKey: ['lesson-search', 'search_lessons', filters, sortBy, pageSize],
+      enabled,                           // SearchPage passes useUrlSync().hydrated
+      initialPageParam: 0,               // pageParam is a PAGE INDEX, not an offset
+      getNextPageParam: (lastPage, allPages) =>
+        loadedSoFar < lastPage.totalCount ? allPages.length : undefined,
+      queryFn: ({ pageParam }) =>
+        supabase.rpc('search_lessons', {
+          search_query, filter_* …,      // one filter_* param per facet, undefined when empty
+          order_by: sortBy,
+          page_size: pageSize,
+          page_offset: pageParam * pageSize,
+        }),
+      placeholderData: keepPreviousData, // C59: prior results stay on screen during a refetch
+      staleTime: 5 min, gcTime: 10 min,
+    })
 ```
+Before the RPC call, `parseSearchQuery` strips filler words from the typed query and routes a grade cue in the text ("3rd grade compost") into the grade filter — unless the user has set an explicit grade filter, which always wins.
+
+**URL**: `urlParams.ts` is the pure serializer/parser — short param names (`q`, `grades`, `themes`, …, `sort`), empty arrays and the default `relevance` sort omitted, unknown params and out-of-vocabulary values dropped on the way in, and `canonicalSearchString` for every equality check. `useUrlSync` keeps URL and store equal in both directions and returns `{ hydrated, flush }`. Its header comment is the authoritative description of the loop guard and history-mode invariants, which several tests pin — read it before touching either file.
+
+**Facet-count badges** (`src/hooks/useFacetCounts.ts` + `src/utils/facetCounts.ts`): one slim select of the facet columns for every non-retired lesson per tab session (React Query, `staleTime: Infinity`), then counts recomputed client-side on every filter toggle, with no network. The hook returns `undefined` until the corpus has loaded, so badges render blank, never fake zeros.
 
 **Clear separation**:
-- Zustand: What the user wants to see (filters, sort, page size)
-- React Query: What the server returned (lessons, count, loading state)
+- Zustand: what the user wants to see (filters, sort, view, density)
+- React Query: what the server returned (lesson pages, total count, loading/error state) plus the facet corpus
+- URL: the shareable projection of filters + sort, kept in step by `useUrlSync`
 
 ---
 
 ### 5.2 Data Flow
 
+Three flows feed the same query key.
+
+**(a) The user toggles a filter or changes the sort**
 ```
-User clicks filter
+User clicks a filter checkbox (or picks a sort)
   ↓
-Zustand: setFilters({ gradeLevels: ['5'] })
+Zustand: toggleFilter('gradeLevels', '5')   /  setViewState({ sortBy: 'title' })
   ↓
-Filter change resets currentPage to 1 (always!)
+useUrlSync store→URL effect: canonical(store) ≠ canonical(URL)
+  → 300 ms debounce → setSearchParams(buildSearchParams(filters, sortBy), { replace: true })
+  (replace: Back leaves the search page, it does not undo one toggle)
   ↓
-React Query: Invalidates query (cache key includes filters)
+React Query: queryKey ['lesson-search', 'search_lessons', filters, sortBy, 20] changed
+  → new query starts at pageParam 0; keepPreviousData keeps the old list on screen meanwhile
   ↓
-useInfiniteQuery refetches with new filters
+RPC: search_lessons(filters…, order_by, page_size=20, page_offset=0)
   ↓
-RPC call: search_lessons(new filters, page_size=20, page_offset=0)
-  ↓
-Results render
-  ↓
-User scrolls to bottom
-  ↓
-InfiniteScrollTrigger calls fetchNextPage()
-  ↓
-RPC call: search_lessons(same filters, page_size=20, page_offset=20)
-  ↓
-New results appended to existing pages
+Results render; useFacetCounts recomputes the badges client-side (no network)
 ```
+
+**(b) The URL changes from outside** (shared link, bookmark, refresh, Back/Forward)
+```
+URL changes (mount, Back/Forward, pasted link)
+  ↓
+useUrlSync URL→store effect: parseSearchParams → validated partial
+  our own echo (one-use written token matches)?  → skip
+  else hydrateUrlState(partial, sortBy): FULL replace of filters + sort in ONE write
+  (fields absent from the URL reset to empty, so Back-to-unfiltered really clears)
+  ↓
+hydrated = true   (SearchPage passes this as `enabled`, so the first RPC never fires with
+                   default filters before a shared link's filters have been applied)
+  ↓
+queryKey change → page 0, as in (a)
+```
+
+**(c) The user scrolls**
+```
+InfiniteScrollTrigger → fetchNextPage()
+  ↓
+getNextPageParam: loaded < totalCount ? allPages.length : undefined
+  ↓
+RPC: search_lessons(same filters, page_size=20, page_offset=pageIndex × 20)
+  ↓
+New page appended to data.pages
+```
+
+Opening a lesson is route state: `/lesson/:lessonId` renders the same SearchPage element as `/search`. Before pushing that route, SearchPage calls `flush()` so a filter toggle still inside the 300 ms debounce window is written to the list history entry rather than the lesson one — Back keeps the toggle.
 
 ---
 
 ### 5.3 Known Limitations
 
-1. **No URL State** (Critical UX issue)
-   - Problem: Filters are not in URL
-   - Impact: Can't share searches, browser back/forward doesn't work, refresh loses state
-   - Planned: Section 10.3.2 (URL state implementation)
+1. **Saved Searches Table Unused**
+   - `saved_searches` exists with RLS but has no UI
+   - Deferred by owner ruling (2026-10-21); not scheduled. Today the URL is the way to keep or share a filter combination.
 
-2. **No View Preference Persistence**
-   - Problem: sortBy, resultsPerPage reset on page refresh
-   - Current: In-memory Zustand store (ephemeral)
-   - Options: localStorage (quick fix) or user_profiles.preferences JSONB (proper solution)
-   - Status: Low priority (teachers don't customize often)
-
-3. **Saved Searches Table Unused**
-   - Problem: `saved_searches` table exists (0 rows) but no UI
-   - Impact: Users can't save filter combinations
-   - Frontend work needed: SaveSearchButton, LoadSearchDropdown
-   - Backend ready: Table + RLS exist
+2. **Sort and filters are intentionally not persisted across sessions**
+   - `persist` keeps only view + density (Section 5.1)
+   - A returning visitor starts from an empty search unless they come back through a URL — the URL is the persistence
 
 ---
 
@@ -1354,41 +1401,55 @@ src/components/
 
 ```typescript
 // src/hooks/useLessonSearch.ts
-export function useLessonSearch({ filters, pageSize }: SearchParams) {
-  return useInfiniteQuery({
-    queryKey: ['lessons', filters, pageSize],
-    queryFn: async ({ pageParam = 0 }) => {
-      const { data, error } = await supabase.rpc('search_lessons', {
-        search_query: filters.query,
-        filter_grade_levels: filters.gradeLevels,
-        filter_themes: filters.thematicCategories,
-        filter_seasons: filters.seasonTiming,
-        // ... 8 more filters
-        page_size: pageSize,
-        page_offset: pageParam
-      });
+interface UseLessonSearchOptions {
+  filters: SearchFilters;
+  pageSize?: number;             // default 20
+  sortBy?: ViewState['sortBy'];  // default 'relevance'; passed straight through as order_by
+  enabled?: boolean;             // default true; SearchPage passes useUrlSync().hydrated
+}
 
-      return {
-        lessons: data.map(transformToLesson),
-        totalCount: data[0]?.total_count || 0
-      };
+export function useLessonSearch({ filters, pageSize = 20, sortBy = 'relevance', enabled = true }) {
+  // Strip filler words and route grade cues from the typed query (an explicit grade filter wins)
+  const { cleanedQuery, detectedGrades } = parseSearchQuery(filters.query ?? '');
+  const effectiveGradeLevels = filters.gradeLevels?.length ? filters.gradeLevels : detectedGrades;
+
+  return useInfiniteQuery<PageResult, Error>({
+    queryKey: ['lesson-search', 'search_lessons', filters, sortBy, pageSize],
+    enabled,
+    initialPageParam: 0,                                  // page INDEX, not an offset
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, p) => sum + p.lessons.length, 0);
+      return loaded < lastPage.totalCount ? allPages.length : undefined;
     },
-    getNextPageParam: (lastPage, pages) => {
-      const loadedCount = pages.length * pageSize;
-      return loadedCount < lastPage.totalCount ? loadedCount : undefined;
+    queryFn: async ({ pageParam }) => {
+      const { data, error } = await supabase.rpc('search_lessons', {
+        search_query: cleanedQuery || undefined,
+        filter_grade_levels: effectiveGradeLevels?.length ? effectiveGradeLevels : undefined,
+        filter_themes: filters.thematicCategories?.length ? filters.thematicCategories : undefined,
+        // ... one filter_* param per facet, undefined when empty
+        order_by: sortBy,
+        page_size: pageSize,
+        page_offset: (pageParam as number) * pageSize,
+      });
+      if (error) throw error;
+      const rows = (data || []) as RpcRow[];
+      return { lessons: rows.map(mapRowToLesson), totalCount: rows[0]?.total_count ?? 0 };
     },
-    staleTime: 5 * 60 * 1000,  // 5 minutes
-    gcTime: 10 * 60 * 1000     // 10 minutes
+    placeholderData: keepPreviousData,  // prior results stay on screen while a key change refetches
+    staleTime: 5 * 60 * 1000,           // 5 minutes
+    gcTime: 10 * 60 * 1000,             // 10 minutes
   });
 }
 ```
 
 **Features**:
-- ✅ Infinite scroll pagination
-- ✅ Automatic refetch on filter change (cache key includes filters)
-- ✅ Debounced search (300ms)
-- ✅ Total count for pagination UI
-- ✅ Error handling with retry (2 attempts)
+- ✅ Infinite scroll pagination (page-index `pageParam`; a filter or sort change rebuilds the key and restarts at page 0)
+- ✅ Automatic refetch on filter or sort change (cache key includes both)
+- ✅ Debounced input — not in this hook: the header search box debounces typing 300 ms (`useDebounce`) before it reaches the store, and the URL writer in `useUrlSync` debounces its own writes 300 ms
+- ✅ Previous results stay on screen during a refetch (`keepPreviousData`); `isPending` is true only on a cold load
+- ✅ Total count from the RPC's `total_count` column
+- ✅ First query gated on URL hydration (`enabled`), so a shared link never flashes a false "No matches"
+- ✅ Error handling with retry: the app-wide QueryClient default in `src/App.tsx` (`retry: 1`), not a per-hook setting
 
 ---
 
@@ -1628,84 +1689,19 @@ ALTER TABLE lessons DROP COLUMN season_timing_backup;  -- Safe after migration c
 
 ### 10.2 Application Layer (Medium Priority)
 
-#### Issue 1: No URL State for Filters
+#### Issue 1: No URL State for Filters — ✅ Resolved (W1c)
 
-**Problem**: Search filters are not in URL query parameters
-
-**Current behavior**:
-- URL: `http://localhost:5173/search` (no params)
-- State: Stored only in Zustand (in-memory)
-- Impact: Can't share searches, browser back/forward broken, refresh loses state
-
-**User pain**:
-- Teacher: "I want to share this search with my colleague" → Can't
-- Teacher: "I clicked back and lost my search" → Frustrating
-- Admin: "Send me a link to 5th grade garden lessons" → Not possible
-
-**Implementation plan** (Section 10.3.2):
-```typescript
-// Serialize filters to URL params:
-// /search?q=garden&grades=5,6&themes=plant-growth
-
-const [searchParams, setSearchParams] = useSearchParams();
-
-// On mount: Parse URL → set Zustand filters
-useEffect(() => {
-  const filters = parseFiltersFromURL(searchParams);
-  setFilters(filters);
-}, []);
-
-// On filter change: Update URL
-const handleFilterChange = (newFilters) => {
-  setFilters(newFilters);  // Zustand
-  setSearchParams(serializeFilters(newFilters));  // URL
-};
-```
-
-**Trade-offs**:
-- ✅ Shareable searches, browser nav works, refresh-safe
-- ❌ Long URLs with many filters (acceptable)
-- ❌ Must keep Zustand + URL in sync (manageable)
-
-**Priority**: High (major UX improvement for teachers)
+Filters, query and sort are serialized into the search URL by `src/utils/urlParams.ts` and kept in two-way sync with the store by `src/hooks/useUrlSync.ts` (native React Router `useSearchParams`, `replace` history mode, 300 ms debounced writes, atomic `hydrateUrlState` on the way in). Shared links, bookmarks, refresh and Back/Forward all work. The `useUrlSync.ts` header comment is the authoritative description of the loop guard; Section 5.2 shows the flows.
 
 ---
 
-#### Issue 2: View Preferences Not Persisted
+#### Issue 2: View Preferences Not Persisted — ✅ Resolved
 
-**Problem**: sortBy, resultsPerPage reset on page refresh
-
-**Current**:
-```typescript
-const initialViewState = {
-  sortBy: 'relevance',
-  resultsPerPage: 20,
-  currentPage: 1
-};
-// Stored in Zustand (ephemeral)
-```
-
-**Impact**: Low (teachers don't customize often)
-
-**Solutions**:
-1. **Quick fix**: localStorage
-   ```typescript
-   const savedPrefs = localStorage.getItem('viewPrefs');
-   const initialViewState = savedPrefs ? JSON.parse(savedPrefs) : defaults;
-   ```
-
-2. **Proper fix**: Database
-   ```sql
-   -- Add to user_profiles:
-   ALTER TABLE user_profiles ADD COLUMN preferences JSONB DEFAULT '{}';
-   -- Store: { sortBy, resultsPerPage, sidebarCollapsed, ... }
-   ```
-
-**Priority**: Low (convenience feature)
+`searchStore.ts` is wrapped in Zustand `persist` (localStorage key `esy-search-ui`), partialized to `viewState.view` and `viewState.density`. Sort and filters are deliberately NOT persisted — the URL carries them (Section 5.1) — and the `user_profiles.preferences` database option once proposed here was not taken.
 
 ---
 
-#### Issue 3: Algolia Remnants Fully Removed (Phase 3 Complete ✅)
+#### Issue 3: Algolia Remnants Fully Removed; Facet Counts Re-implemented Client-side ✅
 
 **Status**: All Algolia code removed in Phase 3 cleanup (September 2025)
 
@@ -1716,18 +1712,7 @@ const initialViewState = {
 - `src/utils/facetHelpers.ts` ❌ Deleted (Algolia-specific)
 - npm packages: `algoliasearch`, `react-instantsearch` ❌ Uninstalled
 
-**Side effect**: Facet counts missing (shows 0)
-
-**Resolution needed**:
-```sql
--- Add SQL facet counts function:
-CREATE FUNCTION get_facet_counts(filters SearchFilters)
-RETURNS JSONB
--- Returns: { gradeLevels: { '5': 45, '6': 38 }, themes: { ... }, ... }
--- Computes counts within filtered scope (excluding current category)
-```
-
-**Priority**: Medium (nice-to-have, not critical)
+**Facet counts**: Algolia's per-option counts went with it and came back client-side (FP-01b) in `src/hooks/useFacetCounts.ts` + `src/utils/facetCounts.ts`: one slim select of the facet columns for every non-retired lesson per tab session, then a per-option count under the RPC's matching rules and every OTHER active filter category. No SQL facet-count function exists or is planned; if a migration ever changes a filter predicate in `search_lessons`, the matching branch in `facetCounts.ts` must change with it (its header lists the SQL twins).
 
 ---
 
@@ -1779,42 +1764,7 @@ DROP INDEX idx_lessons_themes_bool;
 
 ---
 
-#### Priority 2: Implement URL State for Filters (UX)
-
-**Impact**: High (shareable searches, browser nav)
-**Risk**: Medium (must keep URL + Zustand in sync)
-**Time**: 1 day
-
-**Library options**:
-- `nuqs` (Next.js-like query state) - Recommended
-- Native `useSearchParams` (React Router) - Simple
-- `query-string` library - Manual
-
-**Implementation**:
-```typescript
-// Use nuqs for type-safe URL state:
-import { useQueryState, parseAsArrayOf, parseAsString } from 'nuqs';
-
-export function useSearchFiltersFromURL() {
-  const [query, setQuery] = useQueryState('q', parseAsString);
-  const [grades, setGrades] = useQueryState('grades', parseAsArrayOf(parseAsString));
-  // ... 9 more
-
-  // Sync with Zustand on mount
-  // Update URL on filter change
-}
-```
-
-**URL format**:
-```
-/search?q=garden&grades=5,6&themes=plant-growth&format=standalone
-```
-
-**Migration**: Non-breaking (URL state is additive)
-
----
-
-#### Priority 3: Clean Metadata JSONB Duplicates (Maintenance)
+#### Priority 2: Clean Metadata JSONB Duplicates (Maintenance)
 
 **Impact**: Medium (cleaner schema, less confusion)
 **Risk**: Low (if migration tested)
@@ -1849,95 +1799,11 @@ grep -r "metadata\\.gradeLevel\|metadata->>'gradeLevel'" src/
 
 ---
 
-#### Priority 4: Add User Preference Persistence (UX Enhancement)
+#### Resolved since this plan was written
 
-**Impact**: Low (convenience only)
-**Risk**: None
-**Time**: 2-3 hours
-
-**Options**:
-
-1. **localStorage** (quick):
-```typescript
-const useViewPreferences = () => {
-  const [prefs, setPrefs] = useState(() => {
-    const saved = localStorage.getItem('viewPrefs');
-    return saved ? JSON.parse(saved) : defaults;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('viewPrefs', JSON.stringify(prefs));
-  }, [prefs]);
-};
-```
-
-2. **Database** (proper):
-```sql
-ALTER TABLE user_profiles ADD COLUMN preferences JSONB DEFAULT '{}';
--- Store: { sortBy, resultsPerPage, theme (dark/light), sidebarCollapsed }
-
-CREATE FUNCTION update_user_preferences(prefs JSONB) RETURNS void AS $$
-  UPDATE user_profiles
-  SET preferences = prefs
-  WHERE id = auth.uid();
-$$;
-```
-
-**Recommendation**: Start with localStorage, migrate to DB if needed
-
----
-
-#### Priority 5: Implement Facet Counts (Feature)
-
-**Impact**: Medium (better UX, shows available filters)
-**Risk**: Low
-**Time**: 1 day
-
-**What's missing**: Filter option counts (e.g., "5th Grade (45 lessons)")
-
-**Why missing**: Algolia provided this, PostgreSQL doesn't (must compute)
-
-**Implementation**:
-```sql
-CREATE FUNCTION get_facet_counts(
-  current_filters SearchFilters
-) RETURNS JSONB AS $$
-DECLARE
-  counts JSONB := '{}';
-BEGIN
-  -- For each filter category, count available options
-  -- Exclude current category from filter scope (drilldown feel)
-
-  -- Example: Grade level counts
-  SELECT jsonb_object_agg(grade, count) INTO counts
-  FROM (
-    SELECT unnest(grade_levels) as grade, COUNT(*) as count
-    FROM lessons
-    WHERE
-      -- Apply all filters EXCEPT grade_levels
-      (filter_themes IS NULL OR thematic_categories && filter_themes)
-      AND (filter_seasons IS NULL OR season_timing && filter_seasons)
-      -- ... 9 more
-    GROUP BY grade
-  );
-
-  -- Repeat for other 10 categories
-  -- Return: { gradeLevels: { '5': 45, '6': 38 }, themes: { ... }, ... }
-END;
-$$;
-```
-
-**UI integration**:
-```typescript
-const { data: facets } = useQuery(['facets', filters], () =>
-  supabase.rpc('get_facet_counts', { current_filters: filters })
-);
-
-// In FilterModal:
-<option value="5">5th Grade ({facets.gradeLevels['5'] || 0})</option>
-```
-
-**Performance consideration**: May need materialized view for 10,000+ lessons
+- **URL state for filters** (was Priority 2) — shipped in W1c; see Section 10.2 Issue 1.
+- **User preference persistence** (was Priority 4) — shipped via Zustand `persist` (view + density only); see Section 10.2 Issue 2.
+- **Facet counts** (was Priority 5) — shipped client-side (FP-01b); see Section 10.2 Issue 3. The SQL-function design once sketched here was not used.
 
 ---
 
@@ -2291,12 +2157,6 @@ CREATE TABLE lesson_collections (
 ---
 
 ### 13.2 Potential Enhancements
-
-#### Facet Counts (Medium Priority)
-- Show counts per filter option: "5th Grade (45 lessons)"
-- Requires: SQL function to compute counts within filtered scope
-- Performance: O(n) on lessons table, consider materialized view
-- Time: 1 day
 
 #### Advanced Analytics (Admin Feature)
 - Usage metrics: Searches per day, popular filters, top lessons
