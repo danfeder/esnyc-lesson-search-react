@@ -1,7 +1,11 @@
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
 import { FILTER_CONFIGS } from '@/utils/filterDefinitions';
-import { buildCultureLabelMap, collapseHeritageToLeaves } from '@/utils/filterUtils';
+import {
+  buildCultureLabelMap,
+  collapseHeritageToLeaves,
+  collapseIngredientsToLeaves,
+} from '@/utils/filterUtils';
 import { cn } from '@/utils/cn';
 
 // Prefixed with `act-` so no modifier can collide with a Tailwind utility
@@ -89,6 +93,87 @@ export function culturalLabel(value: string): string {
   return CULTURE_LABELS[value] ?? value;
 }
 
+// Canonical season order, single-sourced from the seasonTiming filter config
+// (Fall, Winter, Spring, Summer). Unknown values sort to the end, preserving
+// their relative input order — same policy as GRADE_ORDER.
+const SEASON_ORDER = FILTER_CONFIGS.seasonTiming.options.map((o) => o.value);
+const seasonRank = (s: string): number => {
+  const i = SEASON_ORDER.indexOf(s);
+  return i === -1 ? SEASON_ORDER.length : i;
+};
+
+/** Cap on every list segment of the row/card meta line (ingredients, garden skills, subjects, heritage). */
+export const ROW_LABEL_MAX = 3;
+
+/**
+ * The Seasons segment of the meta line. Every tagged season, de-duplicated
+ * and sorted into vocab order (stored `[Spring, Fall]` reads "Fall, Spring");
+ * when every season in the vocab is present the whole list collapses to the
+ * single display word "Year-round" (derived from the data exactly as "K–5" is
+ * derived from six stored grades — it is not a filter value). Empty →
+ * undefined so the caller omits the segment and its dot.
+ */
+export function intSeasonLabel(seasons: readonly string[] | undefined): string | undefined {
+  if (!seasons || seasons.length === 0) return undefined;
+  const sorted = [...new Set(seasons)].sort((a, b) => seasonRank(a) - seasonRank(b));
+  if (SEASON_ORDER.every((s) => sorted.includes(s))) return 'Year-round';
+  return sorted.join(', ');
+}
+
+/**
+ * The meta line shown after the activity badge on list rows AND card footers
+ * (one rule, two renderers). Segments, in order, each omitted when empty:
+ *
+ *  1. Seasons — every tagged season in vocab order; all four → "Year-round"
+ *     (`intSeasonLabel`).
+ *  2. What — the first non-empty of `mainIngredients` (leaf-collapsed via
+ *     `collapseIngredientsToLeaves`, so a group word never spends a slot when
+ *     its specific is also tagged) → `gardenSkills` → `academicIntegration`.
+ *     Data presence, not the badge, picks the list: a Grow lesson that carries
+ *     ingredients shows them; a Cook lesson with none shows its subjects.
+ *     First ROW_LABEL_MAX values in stored order, comma-joined.
+ *  3. Heritage — exactly the drawer's FP-16 leaf collapse
+ *     (`collapseHeritageToLeaves`), label-mapped, first ROW_LABEL_MAX values
+ *     comma-joined. The cap counts leaves, so a broad ancestor never displaces
+ *     a leaf (collapse happens before the cap).
+ *
+ * Theme is deliberately NOT on the line (it stays in the drawer and the
+ * sidebar filter): a closed 7-word taxonomy where one word lands on a third
+ * of all rows is not a scan fact. Nothing else is added (no Location, cooking
+ * methods, observances, competencies or SEL) and there is no "+N" overflow
+ * marker — the drawer holds the full lists.
+ */
+export function intMetaSegments(lesson: Lesson): string[] {
+  const meta = lesson.metadata;
+  const segments: string[] = [];
+
+  const seasons = intSeasonLabel(meta.seasonTiming);
+  if (seasons) segments.push(seasons);
+
+  const ingredients = collapseIngredientsToLeaves(meta.mainIngredients ?? []);
+  const gardenSkills = meta.gardenSkills ?? [];
+  // `academicIntegration` may be a string[] or `{ selected: string[] }`
+  // (`normalizeMetadata` flattens it at the hook boundary, but a factory-built
+  // lesson may still carry the object form).
+  const academic = meta.academicIntegration;
+  const subjects = Array.isArray(academic) ? academic : (academic?.selected ?? []);
+  const what =
+    ingredients.length > 0 ? ingredients : gardenSkills.length > 0 ? gardenSkills : subjects;
+  if (what.length > 0) segments.push(what.slice(0, ROW_LABEL_MAX).join(', '));
+
+  const heritage = collapseHeritageToLeaves(meta.culturalHeritage ?? [])
+    .slice(0, ROW_LABEL_MAX)
+    .map(culturalLabel);
+  if (heritage.length > 0) segments.push(heritage.join(', '));
+
+  // Theme add-back (owner decision, OFF by default): to restore the theme as a
+  // 4th segment capped at one value, insert exactly this before `return`:
+  //   const themes = meta.thematicCategories ?? [];
+  //   if (themes.length > 0) segments.push(themes[0]);
+
+  return segments;
+}
+
 interface IntListRowProps {
   lesson: Lesson;
   selected: boolean;
@@ -98,13 +183,7 @@ interface IntListRowProps {
 
 export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
   const activity = intActivityLabel(lesson);
-  const meta = lesson.metadata;
-  const season = meta.seasonTiming?.[0];
-  const theme = meta.thematicCategories?.[0];
-  // FP-16: show the most-specific leaf, not a broader ancestor — collapse first
-  // so the row's single heritage tag agrees with the drawer's collapsed list
-  // (a lesson tagged [Asian, East Asian, Chinese] reads "Chinese" in both).
-  const heritage = collapseHeritageToLeaves(meta.culturalHeritage ?? [])[0];
+  const segments = intMetaSegments(lesson);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -127,24 +206,15 @@ export function IntListRow({ lesson, selected, onClick }: IntListRowProps) {
         <p className="int-row-summary">{lesson.summary}</p>
         <div className="int-row-meta">
           <span className={`activity ${activity.className}`}>{activity.label}</span>
-          {season && (
-            <>
+          {segments.map((segment, i) => (
+            // One flex item per segment, dot INSIDE it, so a wrapped segment carries its
+            // dot to the new line instead of leaving it dangling at the end of the old one.
+            // Index keys: segment strings are distinct in practice but nothing guarantees it.
+            <span key={i}>
               <span className="dot">·</span>
-              <span>{season}</span>
-            </>
-          )}
-          {theme && (
-            <>
-              <span className="dot">·</span>
-              <span>{theme}</span>
-            </>
-          )}
-          {heritage && (
-            <>
-              <span className="dot">·</span>
-              <span>{culturalLabel(heritage)}</span>
-            </>
-          )}
+              <span>{segment}</span>
+            </span>
+          ))}
         </div>
       </div>
       <div className="int-row-right">

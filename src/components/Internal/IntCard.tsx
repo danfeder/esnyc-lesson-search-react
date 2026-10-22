@@ -1,7 +1,7 @@
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
 import { cn } from '@/utils/cn';
-import { intActivityLabel, intGradesLabel } from './IntListRow';
+import { intActivityLabel, intGradesLabel, intMetaSegments } from './IntListRow';
 
 interface IntCardProps {
   lesson: Lesson;
@@ -11,9 +11,8 @@ interface IntCardProps {
 
 export function IntCard({ lesson, selected, onClick }: IntCardProps) {
   const activity = intActivityLabel(lesson);
-  const meta = lesson.metadata;
-  const season = meta.seasonTiming?.[0];
-  const theme = meta.thematicCategories?.[0];
+  // Same segments as the list row (seasons · what · heritage) — one rule, two renderers.
+  const segments = intMetaSegments(lesson);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -38,10 +37,17 @@ export function IntCard({ lesson, selected, onClick }: IntCardProps) {
       </div>
       <h3 className="int-card-title">{lesson.title}</h3>
       <p className="int-card-summary">{lesson.summary}</p>
-      {(season || theme) && (
+      {segments.length > 0 && (
         <div className="int-card-meta">
-          {season && <span>{season}</span>}
-          {theme && <span>{theme}</span>}
+          {segments.map((segment, i) => (
+            // One flex item per segment, dot INSIDE it, so a wrapped segment carries its
+            // dot to the new line instead of leaving it dangling at the end of the old one.
+            // Index keys: segment strings are distinct in practice but nothing guarantees it.
+            <span key={i}>
+              {i > 0 && <span className="dot">·</span>}
+              <span>{segment}</span>
+            </span>
+          ))}
         </div>
       )}
     </article>
