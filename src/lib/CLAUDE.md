@@ -210,8 +210,8 @@ VITE_SENTRY_DSN=            # Optional (monitoring)
 
 # Backend/Scripts only (Supabase secrets)
 SUPABASE_SERVICE_ROLE_KEY=  # Admin operations
-OPENAI_API_KEY=              # Embeddings (working in production)
 GOOGLE_SERVICE_ACCOUNT_JSON= # Google Docs API (working in production)
+GOOGLE_IMPERSONATE_EMAIL=    # Defaults to docs-reader@esynyc.org (domain-wide delegation)
 RESEND_API_KEY=              # Email sending
 ```
 

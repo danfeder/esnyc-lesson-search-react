@@ -7,14 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Comprehensive cleanup plan documentation
-- Archive directory for legacy files
-
-### Removed
-- Unnecessary backup files
-- System files (.DS_Store)
-- Empty directories
+_Not maintained per release since 2.0.0 — see `git log` and `docs/plans/` for what shipped._
 
 ## [2.0.0] - 2024-08-05
 
@@ -55,6 +48,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Responsive design
 - Lesson detail modals
 
-[Unreleased]: https://github.com/danfeder/esnyc-lesson-search-react/compare/v2.0.0...HEAD
-[2.0.0]: https://github.com/danfeder/esnyc-lesson-search-react/compare/v1.0.0...v2.0.0
-[1.0.0]: https://github.com/danfeder/esnyc-lesson-search-react/releases/tag/v1.0.0
+[Unreleased]: https://github.com/danfeder/esnyc-lesson-search-react/commits/main

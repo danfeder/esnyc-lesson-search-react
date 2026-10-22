@@ -23,6 +23,15 @@ This directory contains documentation that is no longer actively maintained but 
 | `duplicate-detection-improvement-plan.md` | Improvements to duplicate detection | Historical planning document |
 | `architecture-cleanup-guide.md` | Guide for architecture cleanup | Completed cleanup tasks |
 
+### Superseded guides & completed one-offs (Archived October 2026)
+
+| Document | Original Purpose | Status |
+|----------|------------------|--------|
+| `ROADMAP_2025-08.md` | August-2025 development roadmap (status, backlog, 2026 wishlist) | Frozen; live planning is in `docs/plans/` |
+| `CLAUDE_ACTIONS_V1_MIGRATION_SUMMARY_2025-08.md` | Record of the Aug-2025 Claude Actions v1 migration | Completed; workflows since pruned |
+| `SUBMISSION_PIPELINE_TESTING_GUIDE_2025.md` | Manual walkthrough of the original submission pipeline (auth, submission, duplicate detection) | Superseded by the Tier-1 submission flow, `e2e/`, and `docs/TESTING_GUIDE.md` |
+| `SUBMISSION_PIPELINE_TESTING_CHECKLIST_2025.md` | Quick-reference checklist for the same walkthrough | Superseded (see above) |
+
 ## Usage Notes
 
 - These documents are **read-only references**

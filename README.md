@@ -1,6 +1,6 @@
 # ESYNYC Lesson Search Interface - React Version
 
-A modern, responsive React/TypeScript application for searching and filtering 831 tagged Edible Schoolyard NYC lesson plans. This version features advanced filtering capabilities, hierarchical search, and a Supabase backend.
+A modern, responsive React/TypeScript application for searching and filtering Edible Schoolyard NYC's tagged lesson plans. This version features advanced filtering capabilities, hierarchical search, and a Supabase backend.
 
 ## 🌟 Features
 

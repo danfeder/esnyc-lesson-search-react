@@ -91,7 +91,6 @@ Specific areas where you'd like reviewer feedback:
 - [ ] Notify team in Slack
 - [ ] Update project board
 - [ ] Monitor error tracking
-- [ ] Update CHANGELOG.md
 
 ---
 *For reviewers:*

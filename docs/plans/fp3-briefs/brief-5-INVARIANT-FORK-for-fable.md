@@ -305,3 +305,7 @@ Execution notes for the data fix:
   strays = 0, cooking_skills active violations = 0.
 - Everything else (§4 build scope, §6 sequencing: data fix lands on PROD BEFORE the
   feature merges) is unchanged.
+
+## 9. 2026-10-21 census and closure
+
+2026-10-21 census (Fable, SELECT-only PROD+TEST): 0 active violators / 3 retired (ids 15T4wU94xT3r-dRx-WJq9XD2-ySg2HKaz, 1Jbc2TvhQH-mzikeBiRoyCgR21EgQdbGq, 1Y6tHYm3Hh2vLCBCDaM36_TO1EuM61ofd) / 0 NOT VALID CHECKs. Verdict: A′ as shipped (#604 + #605) is final; B permanently rejected; fork CLOSED. If a DB-level guarantee is ever wanted, use a VALIDATING CHECK via an IMMUTABLE helper mirroring INGREDIENT_PARENT_MAP with the 3 retired rows healed in the same transaction — never NOT VALID.

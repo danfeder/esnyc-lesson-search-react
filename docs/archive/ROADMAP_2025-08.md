@@ -1,3 +1,5 @@
+> Archived 2026-10-21 — frozen August-2025 roadmap, kept for history only. Its status claims no longer hold: lesson counts drift (never cite a number); public search is PostgreSQL full-text search with synonym/typo expansion; the embedding pipeline is retired (duplicate detection is hash + text similarity; `content_embedding` columns are inert); Google Docs extraction is live via domain-wide delegation; Playwright E2E runs in CI. Live planning lives in `docs/plans/` (pre-wave tracker, deferred-work roadmap, FP trackers).
+
 # Development Roadmap
 
 ## Current Status (August 2025)

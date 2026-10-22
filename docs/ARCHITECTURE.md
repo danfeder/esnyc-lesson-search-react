@@ -2510,6 +2510,8 @@ serve(async (req) => {
 
 **State Management**:
 - Search store: `src/stores/searchStore.ts`
+- URL ⇄ store sync: `src/hooks/useUrlSync.ts` + `src/utils/urlParams.ts`
+- Facet-count badges (client-side): `src/hooks/useFacetCounts.ts` + `src/utils/facetCounts.ts`
 - Auth context: `src/hooks/useEnhancedAuth.ts`
 
 **Search Implementation**:

@@ -12,10 +12,6 @@ This directory contains all project documentation organized by category.
 ### `/deployment`
 - [Deployment Guide](deployment/DEPLOYMENT.md) - Instructions for deploying the application
 
-### `/testing`
-- [Testing Guide](testing/TESTING_GUIDE.md) - Comprehensive testing procedures
-- [Testing Checklist](testing/TESTING_CHECKLIST.md) - Quick reference testing checklist
-
 ### `/reports`
 - [Week 1 Completion Report](reports/WEEK1_COMPLETION_REPORT.md) - First week progress report
 - [Week 2 Completion Report](reports/WEEK2_COMPLETION_REPORT.md) - Second week progress report

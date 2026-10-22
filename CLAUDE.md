@@ -171,7 +171,7 @@ Parent selection includes all children. Selecting "Asian" automatically includes
 Name interfaces with `Props` suffix: `ComponentNameProps`
 
 ### Store Actions
-Reset `currentPage` to 1 whenever filters change.
+Pagination is NOT in the store — it lives in React Query as the infinite-query `pageParam` (`src/hooks/useLessonSearch.ts`). A filter or sort change rebuilds the query key, which restarts the query at page 0 on its own; there is no `currentPage` field to reset. Full store rules: `src/stores/CLAUDE.md`.
 
 ## Database
 
