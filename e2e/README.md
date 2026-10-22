@@ -55,8 +55,8 @@ npm run test:e2e:ui
 | `search.spec.ts`        | Search functionality - queries, case-insensitivity, special chars |
 | `filters.spec.ts`       | Filter interactions - grade levels, URL state persistence         |
 | `lessons.spec.ts`       | Lesson display - cards, titles, grades, interactions              |
-| `accessibility.spec.ts` | A11y compliance - keyboard nav, ARIA, color contrast              |
-| `performance.spec.ts`   | Performance - load times, responsive design, touch targets        |
+| `accessibility.spec.ts` | Named a11y regression guards: title, single `<main>`, sr-only h1, §3.2 filter checkboxes, labels, duplicate IDs |
+| `performance.spec.ts`   | Responsive regression guards: C57 mobile filter trigger (visible @375 / hidden @desktop), §4.8 toolbar overflow, b86e073 toggle target size |
 | `authenticated/review-journey.spec.ts` | T5b authenticated journey - submit → all 5 reviewer decisions → revision loop → publish → public search (see below) |
 
 ## Authenticated suite (T5b)
