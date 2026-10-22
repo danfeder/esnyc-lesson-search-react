@@ -10,6 +10,12 @@ import {
   MAIN_INGREDIENTS_VALUES,
   CULTURAL_HERITAGE_VALUES,
   INGREDIENT_PARENT_MAP,
+  ACADEMIC_INTEGRATION_VALUES,
+  SOCIAL_EMOTIONAL_LEARNING_VALUES,
+  CORE_COMPETENCIES_VALUES,
+  COOKING_METHODS_VALUES,
+  OBSERVANCES_HOLIDAYS_VALUES,
+  GARDEN_SKILLS_VALUES,
 } from '@/types/lessonMetadata.zod';
 import { culturalHeritageSlugToLabel } from '@/utils/heritageHierarchy.generated';
 import smallerFieldsVocab from '../../scripts/stage2-retag/data/smaller-fields.vocab.json';
@@ -518,5 +524,32 @@ describe('canonicalizeReviewMetadata — culturalHeritage kebab recovery (Brief 
     const out = canonicalizeReviewMetadata({ culturalHeritage: ['not-a-heritage'] });
     expect(out.culturalHeritage).toEqual(['not-a-heritage']);
     expect(reviewFormPayloadSchema.safeParse(out).success).toBe(false);
+  });
+});
+
+// Refactor-audit §3.2 rider (2026-10): the Stage 2 harness test that pinned this
+// JSON's contents was retired with the pipeline. The JSON stays because the
+// expectations above are read from it, so lock it to the live Zod enums. Five
+// fields move in lock-step with Zod + the DB CHECK (PR #621 edited all three
+// together) → equality. social_emotional_learning is deliberately frozen at the
+// 5 CASEL values while Zod was widened to 11 (FP5 Brief 1) → subset only.
+describe('smaller-fields.vocab.json tracks the Zod enums', () => {
+  it.each([
+    ['equal', 'academic_integration', ACADEMIC_INTEGRATION_VALUES],
+    ['subset', 'social_emotional_learning', SOCIAL_EMOTIONAL_LEARNING_VALUES],
+    ['equal', 'core_competencies', CORE_COMPETENCIES_VALUES],
+    ['equal', 'cooking_methods', COOKING_METHODS_VALUES],
+    ['equal', 'observances_holidays', OBSERVANCES_HOLIDAYS_VALUES],
+    ['equal', 'garden_skills', GARDEN_SKILLS_VALUES],
+  ] as const)('%s lock: %s', (mode, field, zodValues) => {
+    const jsonValues: readonly string[] = VOCAB[field];
+    expect(jsonValues.length).toBeGreaterThan(0);
+    if (mode === 'equal') {
+      expect([...jsonValues]).toEqual([...zodValues]);
+    } else {
+      for (const value of jsonValues) {
+        expect(zodValues as readonly string[]).toContain(value);
+      }
+    }
   });
 });

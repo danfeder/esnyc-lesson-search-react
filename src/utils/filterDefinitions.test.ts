@@ -95,7 +95,7 @@ describe('Filter Definitions Compliance', () => {
 
   // Audit §6.3: every flat closed-enum option list is DERIVED from its exported
   // *_VALUES in lessonMetadata.zod.ts (the single canonical source that the
-  // edge mirror, enums.json and the SQL CHECKs are synced to). These tests pin
+  // edge mirror and the SQL CHECKs are synced to). These tests pin
   // (1) set-equality — the vocabulary can never drift from the canon — and
   // (2) array equality — the UI order IS the canonical order and value===label.
   // A list whose UI order must differ from its *_VALUES order is NOT in this

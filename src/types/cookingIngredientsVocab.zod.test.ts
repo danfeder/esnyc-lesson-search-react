@@ -169,9 +169,10 @@ describe('C02 vocab manifest integrity (src exports)', () => {
  * single source of truth (and the byte-source for the P4b DB CHECK). Assert the TS
  * copies stay byte-identical to it, so a future freeze-reopen that edits the manifest
  * can never silently diverge from the enums (which would make Zod and the DB CHECK
- * disagree → reviewer save failures). The harness side (manifest↔harness) is locked
- * by scripts/stage2-retag/c02-harness-fields.test.ts; the edge mirror is locked to
- * src by edgeSharedSchemas.equivalence.test.ts — so src↔manifest closes the chain.
+ * disagree → reviewer save failures). The edge mirror is locked to src by
+ * edgeSharedSchemas.equivalence.test.ts — so src↔manifest closes the chain. (The
+ * retired Stage 2 harness had its own manifest↔harness lock; it went with the
+ * pipeline in 2026-10.)
  */
 describe('C02 manifest drift-lock (TS consts === frozen c02-vocab.json)', () => {
   const manifest = JSON.parse(
