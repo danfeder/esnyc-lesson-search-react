@@ -27,7 +27,6 @@ export default [
       'scripts/*',
       '!scripts/stage2-retag/',
       '!scripts/heritage/',
-      '!scripts/dedup-sweep/',
       'supabase/functions/**',
       'temp-debug-files/**',
       '.eslintrc.*',
@@ -125,21 +124,6 @@ export default [
   // C1.1 generator, the .mjs test here gets linted too and needs Node globals.
   {
     files: ['scripts/heritage/**/*.mjs'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      globals: {
-        ...globals.node,
-      },
-    },
-  },
-  // Standalone Node scripts under the (un-ignored) dedup-sweep dir — the T4
-  // walkthrough decision recorder (record-decisions.mjs) and the t4c retire
-  // migration generator (generate-retire-migration.mjs). Same rationale as the
-  // heritage block above: scripts/dedup-sweep/ is opted IN for its TS pipeline,
-  // so its .mjs helpers get linted too and need Node globals (console/process).
-  {
-    files: ['scripts/dedup-sweep/**/*.mjs'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

@@ -105,8 +105,8 @@ These stayed in the `docs/plans/` root on purpose:
 - `2026-06-20-deferred-work-roadmap.md` · `2026-06-21-deferred-campaign-status.md` (master tracker) · `2026-06-21-wave2-email-security-execution.md` · `2026-06-22-wave3-repo-docs-hygiene-execution.md`
 
 **Functional runtime inputs (4)** — a script reads the file at build time; moving would break it:
-- `2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` → `scripts/parse-heritage-worksheet.py`
-- `2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md` → `scripts/emit-concepts-vocab.py`
+- `2026-05-10-metadata-rebuild-stage1-heritage-worksheet.md` → `scripts/archive/parse-heritage-worksheet.py` (archived 2026-10; no longer a runtime reader — this input may move in a later docs pass)
+- `2026-06-11-metadata-rebuild-stage1-concepts-worksheet-returned.md` → `scripts/archive/emit-concepts-vocab.py` (archived 2026-10; no longer a runtime reader — this input may move in a later docs pass)
 - `2026-05-12-metadata-rebuild-stage1-concepts-worksheet.md` → `scripts/build-concepts-tool.py`
 - `2026-05-12-metadata-rebuild-stage1-concepts-audit-signal-register.md` → documented input alongside `scripts/build-concepts-tool.py`
 
@@ -119,7 +119,7 @@ These stayed in the `docs/plans/` root on purpose:
 - `2026-06-16-heritage-filter-rebuild-design.md` → heritage filter rebuild (PR C1/C2)
 
 **Cited in editable live source comments (6)** — kept so we don't strand a path a developer would follow (Tier-4 / Option B):
-- `2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md` → `scripts/eval-data/activity-type-relabel-worksheet.md`
+- `2026-04-30-metadata-rebuild-stakeholder-decisions-resolved.md` → `scripts/eval-data/activity-type-relabel-worksheet.md` (scripts/eval-data deleted 2026-10; citation gone — keep-reason dissolved)
 - `2026-05-03-metadata-rebuild-foundation-design.md` → `src/types/lessonMetadata.zod.ts`
 - `2026-05-03-metadata-rebuild-foundation-implementation.md` → `src/hooks/useLessonSearch.ts`, `scripts/*.ts`
 - `2026-06-11-metadata-rebuild-pr6-stage2-retag-design.md` → `scripts/stage2-retag/data/*.json`
