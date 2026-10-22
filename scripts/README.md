@@ -56,23 +56,6 @@ Algolia sync and configuration scripts have been removed as the project now uses
 
 ## Testing Scripts
 
-### `test-edge-function.ts`
-Tests Supabase Edge Functions locally.
-
-**Usage:**
-```bash
-npx tsx scripts/test-edge-function.ts
-```
-
-**Required Environment Variables:**
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-
-**What it does:**
-- Invokes edge functions with test data
-- Validates response format
-- Useful for debugging edge functions
-
 ### `test-rls-policies.mjs`
 Tests Row Level Security policies.
 
@@ -90,34 +73,6 @@ npm run test:rls
 - Tests RLS policies with different user roles
 - Validates data access permissions
 - Ensures security policies work correctly
-
-## Analysis Scripts
-
-### `analyze-content-quality.mjs`
-Analyzes the quality of lesson content.
-
-**Usage:**
-```bash
-node scripts/analyze-content-quality.mjs
-```
-
-**What it does:**
-- Checks for missing metadata
-- Identifies incomplete lessons
-- Generates quality report
-
-### `analyze-duplicates.mjs`
-Analyzes potential duplicate lessons.
-
-**Usage:**
-```bash
-node scripts/analyze-duplicates.mjs
-```
-
-**What it does:**
-- Identifies similar lessons
-- Generates duplicate analysis report
-- Helps with content curation
 
 ## Database Scripts
 
@@ -149,9 +104,9 @@ Deploys edge functions to Supabase.
 
 ## Archive Directory
 
-The `scripts/archive/` directory contains deprecated scripts kept for reference. See `scripts/archive/README.md` for full documentation.
+The `scripts/archive/` directory holds deprecated scripts kept for reference only (stale relative paths, old schema assumptions); see `scripts/archive/README.md` for the per-script ledger.
 
-Key archived scripts include one-time migration scripts, setup utilities, and deprecated test files.
+The 2026-10 scripts sweep deleted roughly 60 one-off scripts outright (duplicate-detection toolchain, embeddings pipeline, Google-Docs import one-offs, 2025-08 hash repair, superseded smoke scripts, one-off SQL, a spent codemod, the eval-data track) instead of archiving them. Git history is the durable record: recover any of them with `git show ba34cac0:scripts/<file> > scripts/<file>` (the commit the sweep branched from). The full list of deleted paths is in `scripts/archive/README.md`.
 
 ## Development Notes
 

@@ -25,8 +25,6 @@ npm run test:rls              # Test RLS policies
 npm run test:edge-functions   # Test edge functions
 
 # Maintenance
-node scripts/generate-embeddings.mjs     # Generate OpenAI embeddings
-node scripts/analyze-duplicates.mjs      # Find duplicate lessons
 node scripts/backup-remote-data.mjs      # Backup production data
 ```
 
@@ -215,11 +213,6 @@ console.log('Edge function response:', result);
 - Checks policy counts
 - Tests specific scenarios
 
-### generate-embeddings.mjs
-- Currently disabled (no OPENAI_API_KEY)
-- Will generate vector embeddings for semantic search
-- Processes in batches to avoid rate limits
-
 ## 📦 Environment Variables Reference
 
 ```bash
@@ -229,7 +222,6 @@ SUPABASE_SERVICE_ROLE_KEY=xxx  # Admin access
 
 # Optional based on script
 VITE_SUPABASE_ANON_KEY=xxx     # For testing
-OPENAI_API_KEY=xxx              # For embeddings (future)
 ```
 
 ## 🚦 Pre-Script Checklist

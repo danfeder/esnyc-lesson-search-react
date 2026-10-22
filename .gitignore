@@ -197,3 +197,14 @@ scripts/dedup-sweep/artifacts/
 
 # T5b authenticated E2E: per-run storageState + run id (minted by e2e/auth.setup.ts)
 e2e/.auth/
+
+# Orphan-recovery snapshots / dry-run artifacts contain teacher-submitted content and are
+# local-only. The scripts moved to scripts/archive/orphan-recovery/ (their own .gitignore
+# moved with them); checkouts that ran the 2026-04 recovery still hold snapshots at the OLD
+# path, so keep that path ignored too.
+scripts/orphan-recovery/snapshots/
+scripts/orphan-recovery/dryrun-artifacts/
+
+# The archived dedup-sweep scripts still resolve artifacts/ relative to their own directory;
+# a (reference-only) run would write a full corpus export to the NEW path, so ignore it too.
+scripts/archive/dedup-sweep/artifacts/
