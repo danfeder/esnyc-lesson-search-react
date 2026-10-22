@@ -95,6 +95,24 @@ describe('HeaderSearch debounce', () => {
     expect(input()).toHaveValue('');
   });
 
+  it('still writes the store when the cleared query is retyped inside the window', () => {
+    renderHeader();
+
+    fireEvent.change(input(), { target: { value: 'tom' } });
+    advance(300);
+    expect(storeQuery()).toBe('tom');
+
+    // External clear (chip / Clear all / Back) lands on the store first.
+    act(() => {
+      useSearchStore.getState().setFilters({ query: '' });
+    });
+    expect(input()).toHaveValue('');
+
+    fireEvent.change(input(), { target: { value: 'tom' } });
+    advance(300);
+    expect(storeQuery()).toBe('tom');
+  });
+
   it('renders no search input off the search routes', () => {
     renderHeader('/review');
 

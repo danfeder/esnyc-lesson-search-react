@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown, Users, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
@@ -167,7 +167,12 @@ function HeaderSearch() {
   const filters = useSearchStore((s) => s.filters);
   const setFilters = useSearchStore((s) => s.setFilters);
   const [localQuery, setLocalQuery] = useState(filters.query);
-  const debouncedQuery = useDebounce(localQuery, 300);
+  // Debounce a fresh wrapper per edit rather than the bare string: a string
+  // that settles to the same value twice (store cleared, then the same query
+  // retyped inside the window) is bailed out by React and would never reach
+  // the store.
+  const pendingQuery = useMemo(() => ({ query: localQuery }), [localQuery]);
+  const debounced = useDebounce(pendingQuery, 300);
 
   // Store → input: URL hydration, chip clears and Back/Forward all land here.
   useEffect(() => {
@@ -176,12 +181,12 @@ function HeaderSearch() {
 
   // Input → store, debounced. Compare against the LIVE store value via
   // getState() — `filters.query` must NOT be a dependency here: an external
-  // store change would re-run this effect with a stale debouncedQuery and
+  // store change would re-run this effect with a stale debounced value and
   // clobber the external value.
   useEffect(() => {
-    if (debouncedQuery === useSearchStore.getState().filters.query) return;
-    setFilters({ query: debouncedQuery });
-  }, [debouncedQuery, setFilters]);
+    if (debounced.query === useSearchStore.getState().filters.query) return;
+    setFilters({ query: debounced.query });
+  }, [debounced, setFilters]);
 
   return (
     <div className="int-search">
