@@ -4,6 +4,7 @@
 import { ALL_FIELD_CONFIGS, FILTER_CONFIGS } from '@/utils/filterDefinitions';
 import type { HeritageOption } from '@/utils/heritageHierarchy.generated';
 import { aliasToSlug, ancestorsBySlug } from '@/utils/heritageAncestry.generated';
+import { INGREDIENT_PARENT_MAP } from '@/types/lessonMetadata.zod';
 
 /**
  * Build a flat `value → label` lookup across the ENTIRE cultural-heritage
@@ -80,5 +81,37 @@ export const collapseHeritageToLeaves = (values: readonly string[]): string[] =>
     seen.add(slug);
     out.push(value);
   });
+  return out;
+};
+
+/**
+ * Collapse a lesson's stored main-ingredient tags to their most specific
+ * leaves — drop a GROUP (e.g. "Beans & legumes") when one of its specifics
+ * (e.g. "Black beans") is also tagged on the same lesson. The ingredient
+ * vocabulary is a two-tier group → specific tree (`INGREDIENT_PARENT_MAP`,
+ * specific → parent group | null), and reviewers store both tiers, so a row
+ * label that showed the first few stored values would spend a slot on a
+ * redundant group word. Same idea as `collapseHeritageToLeaves`.
+ *
+ * Display-only (stored data is unchanged). A group with no tagged specific
+ * survives (e.g. "Nightshades" when no "Tomatoes" is tagged), a group-only
+ * array passes through intact, duplicates are dropped (first occurrence wins)
+ * and stored order is preserved.
+ */
+export const collapseIngredientsToLeaves = (values: readonly string[]): string[] => {
+  // Every group that is the parent of some specific on this lesson.
+  const redundantGroups = new Set<string>();
+  for (const value of values) {
+    const parent = INGREDIENT_PARENT_MAP[value];
+    if (parent) redundantGroups.add(parent);
+  }
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    if (redundantGroups.has(value)) continue; // a group whose specific is also tagged — drop
+    if (seen.has(value)) continue; // duplicate of a kept value — drop
+    seen.add(value);
+    out.push(value);
+  }
   return out;
 };

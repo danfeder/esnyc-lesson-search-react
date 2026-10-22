@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { buildCultureLabelMap, collapseHeritageToLeaves, fieldValueLabeler } from './filterUtils';
+import {
+  buildCultureLabelMap,
+  collapseHeritageToLeaves,
+  collapseIngredientsToLeaves,
+  fieldValueLabeler,
+} from './filterUtils';
 import { FILTER_CONFIGS } from './filterDefinitions';
 
 describe('filterUtils — recursive cultural-heritage helpers', () => {
@@ -86,5 +91,46 @@ describe('fieldValueLabeler (FP-16 — stored value → display label)', () => {
   it('recurses into hierarchical (children) options', () => {
     const label = fieldValueLabeler('culturalHeritage');
     expect(label('chinese')).toBe('Chinese'); // asian › east-asian › chinese
+  });
+});
+
+describe('collapseIngredientsToLeaves (row labels 2026-10-21 — drop a group whose specific is tagged)', () => {
+  it('drops "Beans & legumes" when "Black beans" is present', () => {
+    expect(collapseIngredientsToLeaves(['Black beans', 'Beans & legumes'])).toEqual([
+      'Black beans',
+    ]);
+  });
+
+  it('keeps "Nightshades" when no nightshade specific is present', () => {
+    expect(collapseIngredientsToLeaves(['Nightshades', 'Alliums'])).toEqual([
+      'Nightshades',
+      'Alliums',
+    ]);
+  });
+
+  it('passes a group-only array through intact', () => {
+    expect(collapseIngredientsToLeaves(['Leafy greens', 'Dairy', 'Spices'])).toEqual([
+      'Leafy greens',
+      'Dairy',
+      'Spices',
+    ]);
+  });
+
+  it('preserves stored order and de-duplicates', () => {
+    // Sample 4 "All About Seeds": 8 stored → 5 leaves in stored order.
+    expect(
+      collapseIngredientsToLeaves([
+        'Black beans',
+        'Corn/masa',
+        'Nightshades',
+        'Alliums',
+        'Cilantro',
+        'Beans & legumes',
+        'Grains & starches',
+        'Fresh herbs',
+        'Alliums',
+      ])
+    ).toEqual(['Black beans', 'Corn/masa', 'Nightshades', 'Alliums', 'Cilantro']);
+    expect(collapseIngredientsToLeaves([])).toEqual([]);
   });
 });

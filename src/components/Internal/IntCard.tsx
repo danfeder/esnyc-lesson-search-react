@@ -1,7 +1,8 @@
+import { Fragment } from 'react';
 import type { KeyboardEvent } from 'react';
 import type { Lesson } from '@/types';
 import { cn } from '@/utils/cn';
-import { intActivityLabel, intGradesLabel } from './IntListRow';
+import { intActivityLabel, intGradesLabel, intMetaSegments } from './IntListRow';
 
 interface IntCardProps {
   lesson: Lesson;
@@ -11,9 +12,8 @@ interface IntCardProps {
 
 export function IntCard({ lesson, selected, onClick }: IntCardProps) {
   const activity = intActivityLabel(lesson);
-  const meta = lesson.metadata;
-  const season = meta.seasonTiming?.[0];
-  const theme = meta.thematicCategories?.[0];
+  // Same segments as the list row (seasons · what · heritage) — one rule, two renderers.
+  const segments = intMetaSegments(lesson);
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -38,10 +38,15 @@ export function IntCard({ lesson, selected, onClick }: IntCardProps) {
       </div>
       <h3 className="int-card-title">{lesson.title}</h3>
       <p className="int-card-summary">{lesson.summary}</p>
-      {(season || theme) && (
+      {segments.length > 0 && (
         <div className="int-card-meta">
-          {season && <span>{season}</span>}
-          {theme && <span>{theme}</span>}
+          {segments.map((segment, i) => (
+            // Index keys: segment strings are distinct in practice but nothing guarantees it.
+            <Fragment key={i}>
+              {i > 0 && <span className="dot">·</span>}
+              <span>{segment}</span>
+            </Fragment>
+          ))}
         </div>
       )}
     </article>

@@ -457,7 +457,7 @@
 .int-skeleton-grade { height: 20px; width: 100%; }
 .int-skeleton-title { height: 15px; width: 60%; margin: 2px 0 8px; }
 .int-skeleton-summary { height: 13px; width: 90%; margin-bottom: 6px; }
-.int-skeleton-meta { height: 12px; width: 40%; }
+.int-skeleton-meta { height: 12px; width: 60%; }
 .int-skeleton-open { height: 20px; width: 48px; }
 @media (prefers-reduced-motion: reduce) {
   .int-skeleton { animation: none; }
@@ -778,6 +778,7 @@
   padding-top: 6px;
   border-top: 1px dashed var(--color-esy-ink-10);
 }
+.int-card-meta .dot { color: var(--color-esy-ink-30); }
 
 /* --- Split-view detail rail ---------------------------------------- */
 .int-detail {
