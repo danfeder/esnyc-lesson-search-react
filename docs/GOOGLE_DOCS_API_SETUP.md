@@ -1,12 +1,12 @@
 # Google Docs API Setup Guide
 
 ## Overview
-This guide explains how to implement real Google Docs extraction when ready to move beyond the mock implementation.
+Google Docs extraction is LIVE. `extract-google-doc` (submission intake) and `sync-drive-metadata` (daily Drive provenance refresh) authenticate as a Google Workspace service account using **domain-wide delegation**, impersonating a reader account inside the ESYNYC domain. This guide covers creating or rotating those credentials.
 
 ## Current State
-- ✅ Mock implementation provides realistic lesson content
-- ✅ Edge Function checks for `GOOGLE_SERVICE_ACCOUNT_JSON` environment variable
-- ✅ Structure is ready for real API integration
+- ✅ Real Docs API + Drive API reads via `_shared/google-auth-with-delegation.ts` (scopes `documents.readonly`, `drive.readonly`)
+- ✅ Secrets: `GOOGLE_SERVICE_ACCOUNT_JSON` (service-account key JSON) and `GOOGLE_IMPERSONATE_EMAIL` (defaults to `docs-reader@esynyc.org`), set in Supabase edge-function secrets
+- ✅ Without `GOOGLE_SERVICE_ACCOUNT_JSON` the function serves canned mock lessons — **local development only**; production returns real errors, never mock
 
 ## Setup Steps
 
@@ -15,13 +15,15 @@ This guide explains how to implement real Google Docs extraction when ready to m
 2. Create a new project or select existing
 3. Note your Project ID
 
-### 2. Enable Google Docs API
+### 2. Enable Google Docs API and Google Drive API
 ```bash
 # Using gcloud CLI
 gcloud services enable docs.googleapis.com
+gcloud services enable drive.googleapis.com
 
 # Or via Console:
 # APIs & Services > Enable APIs > Search "Google Docs API" > Enable
+# APIs & Services > Enable APIs > Search "Google Drive API" > Enable
 ```
 
 ### 3. Create Service Account
@@ -33,6 +35,9 @@ gcloud iam service-accounts create esnyc-docs-reader \
 # Get the email
 gcloud iam service-accounts list
 ```
+
+#### 3b. Authorize domain-wide delegation
+Google Workspace Admin console → Security → Access and data control → API controls → Domain-wide delegation → Add new → paste the service account's **Client ID** with scopes `https://www.googleapis.com/auth/documents.readonly,https://www.googleapis.com/auth/drive.readonly`. The impersonated account (`GOOGLE_IMPERSONATE_EMAIL`) must be a real user in the domain that can open the lesson docs.
 
 ### 4. Generate Service Account Key
 ```bash
@@ -47,107 +52,20 @@ cat credentials.json
 
 # Add to Supabase (copy entire JSON)
 npx supabase secrets set GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+npx supabase secrets set GOOGLE_IMPERSONATE_EMAIL=docs-reader@esynyc.org
 ```
 
-## Implementation Code
+Both `extract-google-doc` and `sync-drive-metadata` read these two secrets. Rotating the key = re-run step 4 + step 5; no redeploy is needed.
 
-Replace the TODO section in `extract-google-doc/index.ts`:
-
-```typescript
-if (googleServiceAccount) {
-  try {
-    const credentials = JSON.parse(googleServiceAccount);
-    
-    // Get access token using service account
-    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-        assertion: await createJWT(credentials)
-      })
-    });
-    
-    const { access_token } = await tokenResponse.json();
-    
-    // Get document content
-    const docResponse = await fetch(
-      `https://docs.googleapis.com/v1/documents/${docId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${access_token}`
-        }
-      }
-    );
-    
-    const doc = await docResponse.json();
-    
-    // Extract text content
-    const content = extractTextFromDoc(doc);
-    
-    return new Response(
-      JSON.stringify({
-        success: true,
-        data: {
-          docId,
-          title: doc.title,
-          content,
-          extractedAt: new Date().toISOString(),
-          metadata: {
-            wordCount: content.split(/\s+/).length,
-            extractionMethod: 'google-api',
-            hasImages: doc.inlineObjects ? Object.keys(doc.inlineObjects).length > 0 : false
-          }
-        }
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-  } catch (error) {
-    console.error('Google Docs API error:', error);
-    // Fall back to mock
-  }
-}
-```
-
-## Helper Functions Needed
-
-```typescript
-// Create JWT for service account authentication
-async function createJWT(credentials: any): Promise<string> {
-  // Implementation needed
-  // Use a JWT library or implement manually
-}
-
-// Extract plain text from Google Doc structure
-function extractTextFromDoc(doc: any): string {
-  let text = '';
-  
-  if (doc.body?.content) {
-    for (const element of doc.body.content) {
-      if (element.paragraph?.elements) {
-        for (const textRun of element.paragraph.elements) {
-          if (textRun.textRun?.content) {
-            text += textRun.textRun.content;
-          }
-        }
-      }
-    }
-  }
-  
-  return text.trim();
-}
-```
-
-## Alternative: OAuth2 Flow
-For user-owned documents, implement OAuth2:
-1. User authorizes app to access their Google Docs
-2. Store refresh token
-3. Use refresh token to get access token
-4. Access documents on behalf of user
+## How it works
+- `_shared/google-auth-with-delegation.ts` — signs a service-account JWT with a `sub` claim (the impersonated user) and exchanges it for an access token
+- `_shared/google-docs-parser.ts` — plain-text extraction from the Docs API document structure
+- `_shared/google-drive-metadata.ts` — Drive provenance fields (id, MIME type, created/modified time only; deliberately no owners or permissions)
+- `extract-google-doc/index.ts` — orchestration; metadata fetch is fail-soft, document fetch is not
 
 ## Testing
 1. Create a test Google Doc
-2. Make it publicly readable OR share with service account email
+2. Share it with the impersonated reader account (or place it in a folder that account can read)
 3. Test extraction with the doc ID
 
 ## Security Notes

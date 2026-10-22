@@ -215,7 +215,8 @@ echo "- 20250131_add_feature.sql - Feature X implementation" \
 ## Version History
 
 - **v1.0** (2025-08-05): Initial archive policy
-- **Next Review**: 2026-02-05
+- **v1.1** (2026-10-21): Reviewed during the refactor-audit docs pass; locations table already lists `docs/archive/` and `docs/plans/archive/`
+- **Next Review**: 2027-04-21
 
 ---
 

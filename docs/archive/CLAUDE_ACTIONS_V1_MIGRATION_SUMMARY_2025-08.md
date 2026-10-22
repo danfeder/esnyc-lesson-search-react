@@ -1,3 +1,5 @@
+> Archived 2026-10-21 — completed one-off migration record; several listed workflows are being deleted in the CI batch (group 5).
+
 # Claude Code Action Migration Summary
 
 ## Migration Date: August 29, 2025

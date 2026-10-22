@@ -1,3 +1,5 @@
+> Archived 2026-10-21 — manual walkthrough of the original (2025) submission pipeline; superseded by the Tier-1 submission flow, the Playwright suite in e2e/, and docs/TESTING_GUIDE.md.
+
 # Lesson Submission Pipeline - Quick Testing Checklist
 
 ## 🚀 Quick Start Testing

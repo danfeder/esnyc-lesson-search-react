@@ -47,12 +47,16 @@ export function useLesson(id: string) {
 
 | Hook | Purpose |
 |------|---------|
-| `useLessonSearch({ filters })` | Search lessons with infinite scroll |
-| `useLessonSuggestions({ filters })` | Search suggestions via smart-search |
-| `useEnhancedAuth()` | Auth state with permissions |
-| `useDebounce(value, delay)` | Debounce search input (300ms typical) |
-| `useLessonStats()` | Lesson statistics |
-| `useSearchStore()` | Search filters/view state (Zustand) |
+| `useLessonSearch({ filters, sortBy, pageSize, enabled })` | Public search via the `search_lessons` RPC; React Query infinite scroll (`pageParam` = page index) |
+| `useUrlSync()` | Two-way URL ⇄ store sync for the search page (`hydrated`, `flush`). **Read the file header before touching it** — it documents a loop guard and history-mode invariants that several tests pin |
+| `useFacetCounts(filters)` | True facet-count badges: one slim corpus fetch per session, counts computed client-side (`utils/facetCounts.ts`); `undefined` until loaded |
+| `useLessonById(lessonId, { enabled })` | Single-lesson fetch for `/lesson/:id` permalinks (anon-readable; hides retired lessons) |
+| `useLessonSuggestions({ filters, enabled })` | Zero-result suggestions via the `smart-search` edge function |
+| `useLessonStats()` | Total lesson / category counts for the landing stats |
+| `useEnhancedAuth()` | Auth state with role + permissions |
+| `useDebounce(value, delay)` | Debounce an input value (300 ms typical) |
+| `useMediaQuery(query)` | Subscribe to a CSS media query; gates the desktop split view (SSR/jsdom-safe) |
+| `useSearchStore()` | Zustand store: filters + sort + layout prefs (`src/stores/`); pagination is NOT here |
 
 ## Common Errors
 
