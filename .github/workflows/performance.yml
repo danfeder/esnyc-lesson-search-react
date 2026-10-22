@@ -2,9 +2,9 @@ name: Performance & Quality
 
 on:
   push:
-    branches: [ main, cleanup/main ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, cleanup/main ]
+    branches: [ main ]
 
 jobs:
   lighthouse:
@@ -49,42 +49,3 @@ jobs:
         configPath: './.lighthouserc.json'
         uploadArtifacts: true
         temporaryPublicStorage: true
-        
-  bundle-analysis:
-    name: Bundle Analysis
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v6
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20.x'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: |
-        # Workaround for Dependabot PRs with missing optional dependencies
-        if [[ "${{ github.actor }}" == "dependabot[bot]" ]]; then
-          npm install
-        else
-          npm ci
-        fi
-      
-    - name: Build and analyze bundle
-      run: |
-        npm run build
-        npx vite-bundle-analyzer dist/
-      env:
-        # Use placeholder values for Dependabot PRs (secrets not available)
-        VITE_SUPABASE_URL: ${{ github.actor == 'dependabot[bot]' && 'https://placeholder.supabase.co' || secrets.VITE_SUPABASE_URL }}
-        VITE_SUPABASE_ANON_KEY: ${{ github.actor == 'dependabot[bot]' && 'placeholder-anon-key' || secrets.VITE_SUPABASE_ANON_KEY }}
-        
-    - name: Upload bundle analysis
-      uses: actions/upload-artifact@v7
-      with:
-        name: bundle-analysis
-        path: bundle-analysis.html
-        retention-days: 30

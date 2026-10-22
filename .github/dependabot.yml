@@ -8,8 +8,12 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 10
-    reviewers:
-      - "danfeder"
+    ignore:
+      # Deliberately deferred majors (see #451 / #566): re-open only via a dedicated upgrade branch
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
     assignees:
       - "danfeder"
     commit-message:
@@ -28,8 +32,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "danfeder"
     assignees:
       - "danfeder"
     commit-message:
