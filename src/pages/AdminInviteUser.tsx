@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
 import { UserRole, InvitationFormData, Permission } from '@/types/auth';
 import { logger } from '@/utils/logger';
+import { sendInvitationEmail } from '@/utils/invitationEmail';
 import { isEmailDuplicateError, parseDbError } from '@/utils/errorHandling';
 import {
   IntAlert,
@@ -30,41 +31,6 @@ const ROLE_DEFS: { id: IntRole; label: string; desc: string }[] = [
   },
   { id: 'admin', label: 'Admin', desc: 'Full access — users, taxonomy, settings, analytics.' },
 ];
-
-const PERMISSIONS_FOR_ROLE: Record<UserRole, string[]> = {
-  [UserRole.TEACHER]: ['view_lessons', 'submit_lessons'],
-  [UserRole.REVIEWER]: [
-    'view_lessons',
-    'submit_lessons',
-    'review_lessons',
-    'approve_lessons',
-    'view_analytics',
-  ],
-  [UserRole.ADMIN]: [
-    'view_lessons',
-    'submit_lessons',
-    'review_lessons',
-    'approve_lessons',
-    'delete_lessons',
-    'view_users',
-    'invite_users',
-    'edit_users',
-    'view_analytics',
-    'export_data',
-  ],
-  [UserRole.SUPER_ADMIN]: [
-    'view_lessons',
-    'submit_lessons',
-    'review_lessons',
-    'approve_lessons',
-    'delete_lessons',
-    'view_users',
-    'invite_users',
-    'edit_users',
-    'view_analytics',
-    'export_data',
-  ],
-};
 
 type SchoolOption = { value: string; label: string; __isNew__?: boolean };
 
@@ -214,31 +180,15 @@ export function AdminInviteUser() {
       // Resend sandbox rejects any non-owner recipient, so this usually fails —
       // in which case the admin copies the always-visible link below and sends
       // it manually.
-      let emailSent = false;
-      try {
-        const { error: emailError } = await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'invitation',
-            to: formData.email.trim(),
-            data: {
-              invitationId: inviteData.id,
-              token: inviteData.token,
-              inviterName: user.full_name || user.email,
-              role: formData.role,
-              customMessage: formData.message,
-              permissions: PERMISSIONS_FOR_ROLE[formData.role],
-              expiresAt: inviteData.expires_at,
-            },
-          },
-        });
-        if (emailError) {
-          logger.error('Failed to send invitation email:', emailError);
-        } else {
-          emailSent = true;
-        }
-      } catch (err) {
-        logger.error('Error invoking email function:', err);
-      }
+      const emailSent = await sendInvitationEmail({
+        to: formData.email.trim(),
+        invitationId: inviteData.id,
+        token: inviteData.token,
+        inviterName: user.full_name || user.email,
+        role: formData.role,
+        customMessage: formData.message,
+        expiresAt: inviteData.expires_at,
+      });
 
       const link = `${window.location.origin}/accept-invitation?token=${inviteData.token}`;
       setResult({ email: formData.email.trim(), link, emailSent });
