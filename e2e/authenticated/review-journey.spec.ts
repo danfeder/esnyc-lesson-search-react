@@ -19,7 +19,7 @@ import {
 } from '../utils/authFixture';
 
 // T5b: the authenticated review journey, mirroring the T5 launch smoke
-// (docs/plans/2026-07-03-t5-launch-smoke.md) station by station:
+// (docs/plans/archive/2026-07-03-t5-launch-smoke.md) station by station:
 //   1. teacher submits via /submit/new and lands `submitted`;
 //   2. every one of the five reviewer decisions is exercised, including the
 //      card-bound gating, the already-in-library prefill + re-bind, the

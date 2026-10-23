@@ -466,10 +466,7 @@ const useSearchStore = create<SearchState>()(devtools((set) => ({
 })));
 ```
 
-**URL State**: NOT IMPLEMENTED - planned cleanup item (Section 10.3.2)
-- Current: Filters are NOT in URL (can't share searches)
-- Planned: URL params for shareable searches
-- Blocker: Need to implement serialization/deserialization
+**URL State**: implemented (W1c) — `src/hooks/useUrlSync.ts` + `src/utils/urlParams.ts`, see Section 5.2
 
 ---
 
@@ -2051,7 +2048,7 @@ LIMIT 20
 **Performance at 5,000 lessons**:
 - Search latency: +40-50% (approaching 500ms P95)
 - Recommended: Implement keyset pagination
-- Recommended: Materialized view for facet counts
+- Recommended: Materialized view for facet counts — Resolved: facet counts shipped client-side (`src/hooks/useFacetCounts.ts`), see §5.1
 - Recommended: Partial indexes for hot filter combos
 
 **Performance at 10,000 lessons**:
@@ -2184,6 +2181,8 @@ CREATE TABLE lesson_collections (
 **Trade-off**: Can't jump to arbitrary pages
 
 #### 2. Materialized View for Facet Counts
+
+> Resolved: facet counts shipped client-side (`src/hooks/useFacetCounts.ts`), see §5.1. The rest of this item is kept as history.
 **When**: Facet count queries take >500ms
 **Implementation**:
 ```sql
@@ -2364,7 +2363,7 @@ serve(async (req) => {
 
 **Configuration**:
 - Filter definitions: `src/utils/filterDefinitions.ts` ⭐ SINGLE SOURCE OF TRUTH
-- Environment variables: `.env.local`, `.env.production`
+- Environment variable templates: `.env*.example` (local `.env` files are gitignored)
 - Supabase config: `supabase/config.toml` (committed since #626; settings and `env()` references only, no secrets)
 - TypeScript config: `tsconfig.json`
 
@@ -2391,7 +2390,7 @@ serve(async (req) => {
 
 **Documentation**:
 - Architecture (this file): `docs/ARCHITECTURE.md`
-- Search system: `docs/search-architecture-v2.md`
+- Search system (2025 design plan, archived): `docs/archive/search-architecture-v2.md`
 - Cleanup plan: `docs/archive/architecture-cleanup-guide.md` (archived)
 - Testing: `docs/TESTING_GUIDE.md`
 - RLS patterns: `docs/RLS_SECURITY.md`

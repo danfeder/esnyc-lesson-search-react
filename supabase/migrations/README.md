@@ -350,12 +350,11 @@ WHERE table_name = 'lessons'
 ## Related Documentation
 
 **Schema References**:
-- `docs/production-schema-full.sql` - Complete production schema dump (127 KB)
-- `docs/production-vs-local-diff.sql` - Diff used to create snapshot (121 KB)
+- Schema dumps from the 2025-10 snapshot were removed in 2026-10; the baseline migration file above is the schema reference. Recover the dumps with `git show <sha>^:docs/production-schema-full.sql` (sha = the merge commit of the 2026-10 docs-archival PR).
 
 **Architecture**:
 - `docs/architecture-decisions.md` - Why we made key decisions
-- `docs/search-architecture-v2.md` - Search system design (COMPLETED in production!)
+- `docs/archive/search-architecture-v2.md` - Search system design, 2025 plan (archived; shipped)
 - `docs/archive/architecture-cleanup-guide.md` - Cleanup progress tracker (archived)
 
 **Safety**:

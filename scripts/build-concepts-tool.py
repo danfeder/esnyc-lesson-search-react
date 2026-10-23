@@ -4,7 +4,8 @@ Parse the Stage 1 concepts worksheet's per-value entries and emit either a
 JSON dataPayload (default) or a self-contained interactive HTML tool
 (``--build-html``) for the curriculum-team verdict pass.
 
-Companion to ``scripts/parse-heritage-worksheet.py``. Heritage emits the §16
+Companion to ``scripts/parse-heritage-worksheet.py`` (archived 2026-10 under
+``scripts/archive/``; see its README ledger). Heritage emits the §16
 summary table; concepts emits a richer payload because the concepts tool is a
 full interactive form rather than a static table regeneration.
 

@@ -27,7 +27,7 @@ the Batch-1/2/3 milestone machinery; the old status doc is frozen history). Opti
 
 1. **Sanity-check:** branch must be `tools/concepts-worksheet-form`; the parser must print
    `Parsed 208 entries (§11=32, §12=39, §13=137).` + `merge-target extraction: 53 of 78 … (68%)`.
-   If off, STOP and report drift. (The `bd`/dolt pre-commit warning is the known-broken Beads CLI — ignore.)
+   If off, STOP and report drift.
 2. **Read the plan** (`docs/plans/2026-06-10-concepts-wizard-finish-plan.md`) — goal, locked
    decisions, safety floor, and the first unchecked session checklist item. That's the whole brief;
    only dip into the old design/plan docs if a specific behavior needs its spec (e.g. the design
@@ -49,4 +49,3 @@ the Batch-1/2/3 milestone machinery; the old status doc is frozen history). Opti
 - Stay on `tools/concepts-worksheet-form`; no push/PR without explicit direction.
 - Plain language on screen (no §/CON-xx/tier/verdict/cluster/canonical/`<to_fill>`).
 - Build-script edits only for the Session-2 sidecar merge, with counts + SHA unchanged.
-- Beads CLI is broken — don't run `bd`.
