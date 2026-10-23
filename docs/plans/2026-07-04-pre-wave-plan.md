@@ -18,13 +18,13 @@ account: owner accepts. No bulk-import script: owner declined (volume too small)
 Same as FP4: **one brief per fresh Opus executor session** (token economy — Fable
 designs/verifies, Opus builds), thin hand-backs, Fable receives + re-probes, **owner
 merges every PR and presses every PROD gate**. Standing rules:
-`docs/plans/fp4-briefs/README.md`.
+`docs/plans/archive/fp4-briefs/README.md`.
 
 ## The chain (strict order — each step's gate must be DONE on PROD before the next starts)
 
 | # | Work | Brief | Size | Gates (owner) | Status |
 |---|------|-------|------|---------------|--------|
-| 1 | Heal 7 retired rows + VALIDATE both NOT-VALID constraints | `fp4-briefs/brief-6-validate-constraints.md` (migration `20260707000000`) | L | merge + PROD migration | ☑ **DONE ON PROD 2026-07-04** — PR #605 merged, owner-applied; Fable post-verified live: convalidated ×2, 7/7 byte-equal (cols + JSONB), active 702 untouched, search unaffected, CRE=320 w/ 6-of-7 unfrozen (brief-1 precondition confirmed). Detours logged in brief ADDENDUM + census §5–6 + PR #605 comments (E2E red = canceled-run marker debris on TEST, swept; hygiene follow-up noted) |
+| 1 | Heal 7 retired rows + VALIDATE both NOT-VALID constraints | `archive/fp4-briefs/brief-6-validate-constraints.md` (migration `20260707000000`) | L | merge + PROD migration | ☑ **DONE ON PROD 2026-07-04** — PR #605 merged, owner-applied; Fable post-verified live: convalidated ×2, 7/7 byte-equal (cols + JSONB), active 702 untouched, search unaffected, CRE=320 w/ 6-of-7 unfrozen (brief-1 precondition confirmed). Detours logged in brief ADDENDUM + census §5–6 + PR #605 comments (E2E red = canceled-run marker debris on TEST, swept; hygiene follow-up noted) |
 | 2 | SEL → "Social-Emotional Skills" + 6 new options; "Culturally Responsive Education" → "Cultural Diversity" everywhere incl. 320 PROD lessons | `fp5-briefs/brief-1-sel-skills-and-cultural-diversity.md` (migration `20260708000000`) | M | merge + PROD migration + edge deploy | ☑ **DONE ON PROD 2026-07-04** — PR #606 merged (`5ce0efc`); Fable post-verified live: 0 old-value rows both representations, 320× "Cultural Diversity" both reps, drift 0/785, SEL constraint = 11 values, counts unchanged; edge fns 3-signal verified (process-submission v42, complete-review v13, shas == TEST, new enums in deployed source; one esm.sh 522 flake rerun per playbook). Detours: E2E spec stale sentence-cased group name fixed (`5ce0efc`), Netlify CDP drawer disabled by owner (E2E 11min→2.1min), E2E job timeout 15→25 (PR #607) |
 | 3 | Mechanical template prefill + AI auto-tag OFF switch (code kept) + empty-summary approve guard | `fp5-briefs/brief-2-template-prefill-and-ai-off.md` (no DB) | M | merge + edge deploy | ☑ **DONE ON PROD 2026-07-04** — PR #608 merged; process-submission 3-signal verified (v43, sha == TEST v26 which served a green 77/77 E2E, `ENABLE_AI_AUTO_TAG` in deployed source); frontend auto-deployed. Parser phrasings Fable-verified against the REAL locked template doc verbatim. Bot findings: guard-b all-selected ambiguity ruled works-as-designed; 2 nits queued as ride-alongs (PR #608 comments) |
 | 4 | Reviewer runbook: 1-page how-to for the wave | `docs/plans/2026-07-04-wave-reviewer-runbook.md` (written by Fable) | S | none | ☑ **DONE 2026-07-04** — **THE WAVE CAN START** |
@@ -44,7 +44,7 @@ merges every PR and presses every PROD gate**. Standing rules:
 - **⚠️ Migration renumber note:** FP4 brief 2's migration is dated `20260706000000`,
   which will sort BEFORE the already-applied `20260707000000`/`20260708000000` by the
   time it runs — when brief 2 eventually executes, renumber its migration to the next
-  free date AFTER the latest applied migration (standing rule in fp4-briefs README).
+  free date AFTER the latest applied migration (standing rule in `archive/fp4-briefs/README.md`).
 - Candidates doc §5-adjacent follow-ups (month→theme mapping, heritage prefill,
   AI-draft build-out — owner intends to return to it later).
 

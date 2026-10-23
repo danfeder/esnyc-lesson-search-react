@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-20
 **Status:** **W1a SHIPPED** (PRs #522 → `19d99b7`, #523 → `530b2536`). **W1b SHIPPED + PROD-verified 2026-06-20** (PR3a #524 migration → `3c592b1`, PR3b #525 sort wiring → `5197069`; §4 Q1–Q5 all resolved below; tags/C84 deferred). **W1c Locked 2026-06-20 — ready for implementation** (§4 Q6–Q8 resolved below: write-fresh from the WIP-as-reference; URL = query + filters + `sortBy`; `replace` history mode; lesson deep-linking deferred).
-**Related:** `docs/plans/2026-06-20-deferred-work-roadmap.md` (the campaign roadmap; Theme B = Wave 1), `~/cCode/pr6-overnight-2026-06-12/overnight-review/frontend-ux-review.md` (the source review; section refs below cite it as "review §X")
+**Related:** `docs/plans/archive/2026-06-20-deferred-work-roadmap.md` (the campaign roadmap; Theme B = Wave 1), `~/cCode/pr6-overnight-2026-06-12/overnight-review/frontend-ux-review.md` (the source review; section refs below cite it as "review §X")
 
 ---
 
@@ -220,7 +220,7 @@ Pull up `reference_ci_flakes.md` before the PR3 PROD migration (SASL apply/verif
 
 ## 10. References
 
-- Campaign roadmap: `docs/plans/2026-06-20-deferred-work-roadmap.md` (Theme B = Wave 1; item table for C-ids)
+- Campaign roadmap: `docs/plans/archive/2026-06-20-deferred-work-roadmap.md` (Theme B = Wave 1; item table for C-ids)
 - Source review: `~/cCode/pr6-overnight-2026-06-12/overnight-review/frontend-ux-review.md`
 - Discovery findings (2026-06-20, 10-agent verification): workflow `theme-b-w1a-discovery` — anchors + mechanisms re-verified against `main` @ 4e06e63
 - WIP reference (W1c): `origin/feat/url-persistence` (e6610678); its design doc `docs/plans/2025-12-21-url-persistence-design.md` exists **only on that branch**, not on `main`

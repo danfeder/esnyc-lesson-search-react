@@ -60,17 +60,15 @@ npm run backup:production
 # 1. Backup current database
 supabase db dump > backup-$(date +%Y%m%d-%H%M%S).sql
 
-# 2. Apply migrations to staging first
-supabase db push --db-url $STAGING_DB_URL
+# 2. Migrations reach the TEST project automatically: opening the PR applies them
+#    and runs the RLS + E2E tests against the Netlify deploy preview (e2e.yml).
+#    Verify on TEST with real data before merging (mcp__supabase-test__execute_sql).
 
-# 3. Test in staging
-npm run test:e2e:staging
+# 3. Merging to main triggers migrate-production.yml: review the dry-run,
+#    then approve the GitHub Environment gate. Never `supabase db push` by hand.
 
-# 4. Apply to production
-supabase db push --db-url $PRODUCTION_DB_URL
-
-# 5. Verify migrations
-supabase db status
+# 4. Verify migration status afterwards
+supabase migration list
 ```
 
 ### 3️⃣ Edge Functions Deployment
@@ -78,16 +76,14 @@ supabase db status
 # 1. Test functions locally
 supabase functions serve
 
-# 2. Deploy to staging
-supabase functions deploy --project-ref staging-ref
+# 2. Deploy to the TEST project and smoke-test there (there is no staging environment)
+supabase functions deploy --project-ref rxgajgmphciuaqzvwmox
+npm run test:edge-functions
 
-# 3. Test edge functions
-npm run test:edge-functions:staging
+# 3. Deploy to production
+supabase functions deploy --project-ref jxlxtzkmicfhchkhiojz
 
-# 4. Deploy to production
-supabase functions deploy --project-ref prod-ref
-
-# 5. Verify functions
+# 4. Verify functions
 supabase functions list
 ```
 
@@ -185,13 +181,11 @@ supabase functions deploy --version previous
 
 ## Environment-Specific Checklists
 
-### 🧪 Staging Deployment
-- [ ] Basic auth enabled (if required)
-- [ ] Test data loaded
-- [ ] Debug mode enabled
-- [ ] Staging subdomain configured
-- [ ] Email service in test mode
-- [ ] Payment systems in test mode
+### 🧪 TEST Project (pre-merge)
+The pipeline is Local → TEST → PROD; there is no staging environment (see `supabase/migrations/CLAUDE.md`).
+- [ ] PR open: CI applied migrations to TEST and the RLS + E2E jobs are green
+- [ ] Netlify deploy preview checked by hand
+- [ ] New functions / RLS policies verified on TEST with real data (`mcp__supabase-test__execute_sql`)
 
 ### 🚀 Production Deployment
 - [ ] Maintenance mode page ready
@@ -297,7 +291,7 @@ supabase functions logs [function-name]
 
 **Version**: v2.x.x
 **Deployer**: [Name]
-**Environment**: Production/Staging
+**Environment**: Production
 **Start Time**: [TIME]
 **End Time**: [TIME]
 

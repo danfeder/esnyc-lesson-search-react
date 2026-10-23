@@ -1,7 +1,7 @@
 # FP5 Brief 2 — Mechanical template prefill + AI auto-tag off switch + summary guard (M)
 
 Read `docs/plans/fp5-briefs/README.md` + the standing rules in
-`docs/plans/fp4-briefs/README.md` first (STOP rule verbatim: "STOP = write the hand-back
+`docs/plans/archive/fp4-briefs/README.md` first (STOP rule verbatim: "STOP = write the hand-back
 and END YOUR TURN; design forks route to Fable; the owner only answers explicit approvals
 (data fix / merge / gates).")
 

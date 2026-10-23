@@ -12,20 +12,24 @@
    against production when the wrong `.env` is loaded or prod creds are
    uncommented. Explicit opt-in via `--i-mean-prod` flag. See "Script
    Creation Pattern" below.
+7. **Keep-ledger** - `scripts/README.md` lists every live script and every frozen reference file; a cleanup sweep must not delete anything listed there.
 
 ## 🚀 Quick Script Commands
 
 ```bash
 # Data Import/Export
-npm run import-data           # Import lessons from JSON
-# (Legacy removed) Algolia sync and synonyms configuration are no longer used
+npm run import-data           # Import the local seed (LOCAL/TEST only)
+npm run export-dev-seed       # Regenerate the local seed from PROD (anon key, read-only)
 
 # Testing
-npm run test:rls              # Test RLS policies
-npm run test:edge-functions   # Test edge functions
+npm run test:rls              # Test RLS policies (-- --local for a local stack)
+npm run test:edge-functions   # Edge-function smoke
+npm run test:heritage         # Cultural-heritage hierarchy checks
+npm run eval:search           # Search relevance scorecards
 
 # Maintenance
 node scripts/backup-remote-data.mjs      # Backup production data
+bash scripts/pr-surfaces.sh <PR>         # Dump all four PR-feedback surfaces
 ```
 
 ## 🔧 Script Creation Pattern
@@ -151,12 +155,6 @@ function validateLesson(lesson) {
 }
 ```
 
-## 🔍 Search Migration Notes
-
-- Project now uses PostgreSQL full-text search for results and suggestions.
-- Synonym and typo expansion handled via SQL functions and/or Edge Functions.
-- Previous Algolia sync and config scripts have been removed.
-
 ## 🧪 Testing Scripts
 
 ### RLS Policy Test
@@ -222,13 +220,14 @@ SUPABASE_SERVICE_ROLE_KEY=xxx  # Admin access
 
 # Optional based on script
 VITE_SUPABASE_ANON_KEY=xxx     # For testing
+EXPORT_SOURCE_ANON_KEY=xxx     # export-dev-seed only (PROD anon key, read-only)
 ```
 
 ## 🚦 Pre-Script Checklist
 
 - [ ] Environment variables set
 - [ ] Database backed up
-- [ ] Test on staging first
+- [ ] Test on LOCAL/TEST first (there is no staging environment)
 - [ ] Batch size appropriate
 - [ ] Error handling in place
 - [ ] Progress logging added

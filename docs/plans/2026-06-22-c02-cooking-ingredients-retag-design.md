@@ -7,9 +7,9 @@
 > **✅ PIVOT RE-LOCKED 2026-06-23 (Session 9).** The P2 pilot failed — both `claude-opus-4-8` and the `claude-opus-4-7` fallback over-tagged (raw-LLM precision **66.5%** / recall **89.7%** on the 69-lesson tight gold key; `Tasting` predicted on 78% of lessons, `Kitchen & food safety` 43%) because the harness was a *blind* full-LLM re-read (LLM got body only; floor rules R7/R8 fired **0×**; apply wrote all ~14 fields). The method has been re-designed and re-locked in **§3·PIVOT** below, validated by a Codex cross-exam (agent `ab877ed343f682131`, gpt-5.5). Headline: **anchored verify-and-diff** (show the LLM the current provenance-annotated tags; KEEP/DROP/ADD, not re-tag-from-scratch) + **one canonical floor** + **reconcile in code** + **C02-only apply scope** + **per-value gates with a recomputed baseline** + a **3-layer test strategy** (69-key workhorse / fresh-25 canary / corpus-wide prevalence). §3 / §4-Q3 / §4-Q5 / §4-Q6 + the apply scope are **SUPERSEDED by §3·PIVOT — read it first.** Full pilot findings + scorecards: the execution-status doc + `scripts/stage2-retag/artifacts/c02-pilot-scorecard.opus-4-{8,7}.md` + `c02-filter-usefulness.md`.
 
 **Related:**
-- Discussion kickoff: `docs/plans/2026-06-22-c02-vocab-retag-discussion-kickoff.md`
+- Discussion kickoff: `docs/plans/archive/2026-06-22-c02-vocab-retag-discussion-kickoff.md`
 - Decided vocabulary worksheet: `docs/plans/2026-06-12-metadata-rebuild-stage1-cooking-skills-ingredients-worksheet-decided.md`
-- Wave-4 carry-forward findings: `docs/plans/2026-06-22-wave4-data-corpus-cleanup-design.md` §3.1 / §4 Q11–14a / §8
+- Wave-4 carry-forward findings: `docs/plans/archive/2026-06-22-wave4-data-corpus-cleanup-design.md` §3.1 / §4 Q11–14a / §8
 - Re-tag harness: `scripts/stage2-retag/` (export → normalize → run-retag → validate → diff → apply + answer-key scoring)
 - Memory: `project_metadata_rebuild_initiative` ("PR F" definition), `project_deferred_work_campaign`, `feedback_data_safety_top_priority`, `feedback_per_round_test_db_verification`, `feedback_codex_over_crossexamine`, `feedback_multi_session_execution`
 
@@ -236,7 +236,7 @@ Mirror the shipped `garden_skills` closed loop, for BOTH fields, **after** the d
 ## 11. References
 
 - Worksheet (decided vocab): `docs/plans/2026-06-12-metadata-rebuild-stage1-cooking-skills-ingredients-worksheet-decided.md`
-- Wave-4 carry-forward: `docs/plans/2026-06-22-wave4-data-corpus-cleanup-design.md` §3.1 / §4 Q11–14a / §8
+- Wave-4 carry-forward: `docs/plans/archive/2026-06-22-wave4-data-corpus-cleanup-design.md` §3.1 / §4 Q11–14a / §8
 - Harness: `scripts/stage2-retag/` (+ `artifacts/answer-key-scorecard.md` — the 13-field precedent that excludes these two)
 - PR-6 apply precedent: `supabase/migrations/20260617000000_pr6c2_retag_apply.sql` (snapshot + CHECK pattern)
 - Dual-write precedent: `supabase/migrations/20260519000000_complete_review_atomic_tags_side_channel.sql`

@@ -1,6 +1,23 @@
 # Scripts Directory
 
-This directory contains utility scripts for managing the ESYNYC Lesson Search application.
+Every script in this directory is either live tooling or a frozen reference input. One-off scripts were deleted in the 2026-10 sweep; git history holds them (see `## Archive` below). This file is the **keep-ledger**: a cleanup sweep must not delete anything listed here.
+
+## Live tooling (keep-ledger)
+
+| Script | Run via | What it does | Wired from |
+|---|---|---|---|
+| `import-data.js` | `npm run import-data` | Local/TEST seed import (`requireNonProd`-guarded) | `package.json` |
+| `export-dev-seed.mjs` | `npm run export-dev-seed` | Regenerate the local seed from PROD; anon key, read-only | `package.json` |
+| `test-rls-policies.mjs` | `npm run test:rls` (`-- --local` against a local stack) | RLS policy checks (rewritten in PR #627) | `package.json`, CI (`e2e.yml`) |
+| `test-edge-functions.mjs` | `npm run test:edge-functions` | Edge-function smoke | `.github/workflows/edge-function-smoke.yml` |
+| `heritage/test-heritage-expansion.mjs` + `heritage/generate-heritage-hierarchy.ts` (+ `heritage/artifacts/`) | `npm run test:heritage` | Cultural-heritage hierarchy from `data/vocab/cultural-heritage.vocab.json` | `package.json` |
+| `search-eval/run-search-eval.ts` (+ `metrics.ts`, `predicate.ts`, `readonly-guard.ts`, `queries.json`, `baseline.json`, `scorecards/`) | `npm run eval:search` | Search relevance scorecards | `package.json` |
+| `drive-provenance/backfill-drive-provenance.mjs`, `build-actor-map.mjs`, `lib/*`, `*.sql` assertions | `node scripts/drive-provenance/…` | Drive provenance backfill + actor sweep (Gate 2 done 2026-07-18; runbook `docs/plans/2026-07-17-backfill-session-runbook.md`) | manual, owner-supervised |
+| `pr-surfaces.sh` | `bash scripts/pr-surfaces.sh <PR>` | Dumps all four PR-feedback surfaces | `.claude/commands/pr-triage.md` |
+| `deploy-edge-functions.sh`, `backup-database.sh`, `backup-remote-data.mjs` | manual | Deploy / backup helpers (sections below) | — |
+| `build-concepts-tool.py` + `concepts-worksheet-tool.template.html` | `python3 scripts/build-concepts-tool.py --verify-only \| --build-html` | Concepts worksheet wizard (`/concepts-batch2` reopen path) | `.claude/commands/concepts-batch2.md` |
+| `install_pkgs.sh`, `cloud-setup.sh` | SessionStart hook / environment setup script | npm install + Docker start in Claude Code cloud sessions only | `.claude/settings.json`; the cloud environment's Setup script field |
+| `lib/require-env.mjs`, `lib/grade-levels.mjs`, `lib/evalMetrics.ts` | imported | Shared helpers (`evalMetrics` is read by `search-eval/metrics.ts`) | the scripts above |
 
 ## Data Management Scripts
 
@@ -51,9 +68,6 @@ npm run import-data
 - `EXPORT_SOURCE_ANON_KEY` (required) — PROD publishable/anon key
 - `EXPORT_SOURCE_URL` (optional) — defaults to the known PROD project URL
 
-### Search sync (legacy)
-Algolia sync and configuration scripts have been removed as the project now uses PostgreSQL full‑text search. There is nothing to run and no script reads an Algolia environment variable. If search sync is needed in the future, prefer SQL functions or Edge Functions.
-
 ## Testing Scripts
 
 ### `test-rls-policies.mjs`
@@ -102,12 +116,6 @@ Deploys edge functions to Supabase.
 - Updates function configurations
 - Shows deployment status
 
-## Archive Directory
-
-The `scripts/archive/` directory holds deprecated scripts kept for reference only (stale relative paths, old schema assumptions); see `scripts/archive/README.md` for the per-script ledger.
-
-The 2026-10 scripts sweep deleted roughly 60 one-off scripts outright (duplicate-detection toolchain, embeddings pipeline, Google-Docs import one-offs, 2025-08 hash repair, superseded smoke scripts, one-off SQL, a spent codemod, the eval-data track) instead of archiving them. Git history is the durable record: recover any of them with `git show ba34cac0:scripts/<file> > scripts/<file>` (the commit the sweep branched from). The full list of deleted paths is in `scripts/archive/README.md`.
-
 ## Reference data kept on purpose
 
 Frozen inputs that live tests and generators still read. Do not delete or move them in a cleanup sweep; git history holds the tooling that produced them. `scripts/stage2-retag/` now holds only its `data/` files — the pipeline itself was retired in 2026-10.
@@ -118,6 +126,12 @@ Frozen inputs that live tests and generators still read. Do not delete or move t
 | `scripts/stage2-retag/data/smaller-fields.vocab.json` | Locked six small-field vocab — canonical targets for legacy review-row canonicalization | `src/utils/canonicalizeReviewMetadata.test.ts` |
 | `data/vocab/cultural-heritage.vocab.json` | Single source of truth for the cultural-heritage hierarchy | `scripts/heritage/generate-heritage-hierarchy.ts` |
 | `data/vocab/academic-concepts.vocab.json` | Frozen emitted artifact behind migrations `20260612000000_pr5b_concepts_canonicalization.sql` and `20260613000000_fold_urban_revitalization_concept.sql`; no live code reads it any more | provenance only (archived generators in `scripts/archive/` still name it) — keep |
+
+## Archive
+
+The `scripts/archive/` directory holds deprecated scripts kept for reference only (stale relative paths, old schema assumptions); see `scripts/archive/README.md` for the per-script ledger.
+
+The 2026-10 scripts sweep deleted roughly 60 one-off scripts outright (duplicate-detection toolchain, embeddings pipeline, Google-Docs import one-offs, 2025-08 hash repair, superseded smoke scripts, one-off SQL, a spent codemod, the eval-data track) instead of archiving them. Git history is the durable record: recover any of them with `git show ba34cac0:scripts/<file> > scripts/<file>` (the commit the sweep branched from). The full list of deleted paths is in `scripts/archive/README.md`.
 
 ## Development Notes
 

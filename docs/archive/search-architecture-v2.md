@@ -1,3 +1,5 @@
+> **Archived 2026-10.** 2025 design plan; the search it describes shipped as the unified `search_lessons` RPC (see `docs/ARCHITECTURE.md`). The `VITE_ENABLE_SEARCH_V2` flag mentioned below never shipped — there is no reference to it in `src/`.
+
 **Search Architecture — V2 Plan (Code + Database)**
 
 Purpose
@@ -85,7 +87,7 @@ Triggers Cleanup
 - Ensure only generate_lesson_search_vector path remains (drop update_search_vector once unused)
 
 Frontend Integration
-- Feature flag: VITE_ENABLE_SEARCH_V2 (already wired). Update getSearchRpcName() to route to 'search_lessons_v2' when ready
+- Feature flag: VITE_ENABLE_SEARCH_V2 (already wired). Update getSearchRpcName() to route to 'search_lessons_v2' when ready — *2026-10 archive note: this flag never shipped (zero references in `src/`); the unified `search_lessons` RPC is the live path.*
 - Hooks: useLessonSearch already centralizes the RPC + pagination; only needs rpcName switch
 - Params: Season filter name must remain filter_seasons (already corrected). Keep cookingMethods single-select (string) and check membership in cooking_methods[]
 - Suggestions: keep useLessonSuggestions with Edge Function for now; optional future SQL-only suggestions via synonyms table

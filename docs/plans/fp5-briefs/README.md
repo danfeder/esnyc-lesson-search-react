@@ -5,7 +5,7 @@ Owner-approved scope from the 2026-07-04 Fable Q&A session (decision record:
 per fresh Opus executor session, thin hand-backs, owner merges every PR and presses every
 PROD gate.
 
-**The standing rules in `docs/plans/fp4-briefs/README.md` apply verbatim to every FP5
+**The standing rules in `docs/plans/archive/fp4-briefs/README.md` apply verbatim to every FP5
 brief** (STOP rule, branch/gates, migration discipline, PROD/TEST probe rules, bot triage,
 verbatim identifiers, thin hand-backs). Read that section first.
 

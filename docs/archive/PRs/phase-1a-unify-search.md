@@ -1,5 +1,7 @@
 # Phase 1A: Unify Search via useInfiniteQuery + Initial Tests
 
+> **Archived 2026-10.** Draft PR description, merged 2025. The `VITE_ENABLE_SEARCH_V2` flag it names never shipped — there is no reference to it in `src/`; the unified `search_lessons` RPC is the live path.
+
 ## Summary
 This PR is the first incremental step of the Architecture Cleanup plan. It unifies the frontend search pipeline around a single React Query `useInfiniteQuery` hook, refactors the SearchPage to use it for both initial results and pagination, and adds initial integration tests for paging and error handling.
 
@@ -12,7 +14,7 @@ This PR is the first incremental step of the Architecture Cleanup plan. It unifi
   - Covers initial page render, load more, and error display
 - Update `docs/archive/architecture-cleanup-guide.md` progress (Phase 1 items marked complete)
 - Phase 0 preparatory changes already in tree:
-  - RPC flag & helper: `VITE_ENABLE_SEARCH_V2` and `src/lib/search.ts`
+  - RPC flag & helper: `VITE_ENABLE_SEARCH_V2` and `src/lib/search.ts` — *2026-10 archive note: the flag never shipped (zero references in `src/`); the unified `search_lessons` RPC is the live path.*
   - DB baseline snapshot: `docs/db-baseline-2025-09-01.md`
 
 ## Not in this PR
