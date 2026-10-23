@@ -32,7 +32,7 @@ import {
   IntStatusBadge,
   type IntRole,
 } from '@/components/Internal';
-import { STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
+import { badgeForStatus, type SubmissionStatus } from '@/utils/submissionStatus';
 
 const BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 
@@ -574,7 +574,7 @@ export function UserProfile() {
               {submissions.map((submission) => (
                 <article key={submission.id} className="adm-submission-row">
                   <div className="adm-submission-row-head">
-                    <IntStatusBadge status={STATUS_TO_BADGE[submission.status]}>
+                    <IntStatusBadge status={badgeForStatus(submission.status)}>
                       {submission.status === 'rejected' ? 'Not published' : undefined}
                     </IntStatusBadge>
                     <span className="adm-submission-row-type">
