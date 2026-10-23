@@ -45,7 +45,7 @@ This directory contains documentation that is no longer actively maintained but 
 | `sessions/*` (3) | `docs/sessions/` | Oct-2025 architecture-cleanup session logs and handoffs |
 | `PRs/*` (4) | `docs/PRs/` | Draft PR descriptions for the 2025 search-unification phases (all merged) |
 | `development/*` (2) | `docs/development/` | 2025 development plan and the Algolia→PostgreSQL migration plan (completed; the `algolia-synonyms.json` it names was removed in 2026-10) |
-| `migrations/*.sql` (4) | `docs/migrations/` | Hand-applied 2025-09 SQL for `publish_approved_submissions` (function retired by the 2026-10 cleanup); kept for audit trail only |
+| `migrations/*.sql` (4) | `docs/migrations/` | Hand-applied 2025-09 SQL for `publish_approved_submissions` (function revoked 2026-04 by migration `20260426000000_revoke_publish_approved_submissions.sql`); kept for audit trail only |
 
 Also removed outright (not archived): `docs/production-schema-full.sql` and `docs/production-vs-local-diff.sql` — generated Oct-2025 dumps, recoverable from git history (`git show <merge-commit>^:docs/production-schema-full.sql`).
 
