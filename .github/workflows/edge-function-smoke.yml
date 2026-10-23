@@ -47,9 +47,10 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        # `--omit=dev` skips Playwright + lint/test tooling, leaving just
-        # what scripts/test-edge-functions.mjs needs (dotenv). Cuts install
-        # from ~60 s to ~15 s.
+        # `--omit=dev` installs only runtime deps (13 direct packages); the smoke
+        # script needs nothing from node_modules — dotenv is a devDependency
+        # and scripts/test-edge-functions.mjs try/catches its import because
+        # CI injects env vars directly. Cuts install from ~60 s to ~15 s.
         run: npm ci --omit=dev
 
       - name: Run smoke against PROD
