@@ -93,7 +93,7 @@ If you still get errors:
 2. **Test function directly**:
    ```bash
    curl -X POST https://jxlxtzkmicfhchkhiojz.supabase.co/functions/v1/send-email \
-     -H "Authorization: Bearer YOUR_ANON_KEY" \
+     -H "Authorization: Bearer <an admin user's access token or the service-role key>" \
      -H "Content-Type: application/json" \
      -d '{"type":"invitation","to":"test@example.com","data":{}}'
    ```
@@ -106,13 +106,8 @@ If you still get errors:
 ## Email Templates
 
 The function supports these email types:
-- `invitation`: New user invitations
-- `welcome`: Welcome email after account creation
-- `password-reset`: Password reset requests
-- `password-changed`: Password change confirmations
-- `role-changed`: Role update notifications
-- `account-deactivated`: Account deactivation notices
-- `account-reactivated`: Account reactivation notices
+- `invitation`: New user invitations (admin pages)
+- `account-deactivated` / `account-reactivated`: account status notices (sent by `user-management` bulk actions)
 
 ## Using Resend for Email
 

@@ -1,13 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import {
-  applyFilters,
-  applySorting,
-  applyPagination,
-  transformRow,
-  type SearchFilters,
-  type SortBy,
-} from '../_shared/search-helpers.ts';
+import { applyFilters, type SearchFilters } from '../_shared/search-helpers.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,9 +90,7 @@ function buildSmartSearchQuery(query: string, synonyms: SynonymRow[]): string {
 interface SearchRequest {
   query?: string;
   filters?: SearchFilters;
-  page?: number;
-  limit?: number;
-  sortBy?: SortBy;
+  // page / limit / sortBy are accepted and ignored (rows are never returned).
 }
 
 serve(async (req) => {
@@ -121,14 +112,11 @@ serve(async (req) => {
     const body: SearchRequest = await req.json();
     const query = body.query;
     const filters = body.filters ?? {};
-    const page = Math.max(1, Math.floor(Number(body.page) || 1));
-    const limit = Math.min(100, Math.max(1, Math.floor(Number(body.limit) || 20)));
-    const sortBy = body.sortBy ?? 'relevance';
 
-    // Build the base query
+    // Build the base query (count-only HEAD request; rows are never returned)
     let supabaseQuery = supabaseClient
       .from('lessons_with_metadata')
-      .select('*', { count: 'exact' })
+      .select('lesson_id', { count: 'exact', head: true })
       // Exclude soft-retired imports from user-facing search.
       // The `lessons_with_metadata` view is intentionally not filtered;
       // detect-duplicates / get_lesson_details_for_review need to keep
@@ -158,33 +146,25 @@ serve(async (req) => {
       supabaseQuery = supabaseQuery.textSearch('search_vector', smartSearchQuery);
     }
 
-    // Apply shared filters, sorting, pagination
+    // Apply shared filters
     supabaseQuery = applyFilters(supabaseQuery, filters);
-    supabaseQuery = applySorting(supabaseQuery, sortBy);
-    supabaseQuery = applyPagination(supabaseQuery, page, limit);
 
-    const { data, error, count } = await supabaseQuery;
+    const { error, count } = await supabaseQuery;
 
     if (error) {
       throw error;
     }
 
-    // deno-lint-ignore no-explicit-any
-    const lessons = (data || []).map((row: any) => transformRow(row));
-
     // Include search suggestions if no results found
+    const totalCount = count ?? 0;
     let suggestions: string[] = [];
-    if (lessons.length === 0 && trimmedQuery) {
-      const expandedTerms = expandSearchTerms(trimmedQuery, synonyms);
-      suggestions = expandedTerms.slice(0, 5); // Limit to 5 suggestions
+    if (totalCount === 0 && trimmedQuery) {
+      suggestions = expandSearchTerms(trimmedQuery, synonyms).slice(0, 5); // Limit to 5 suggestions
     }
 
     return new Response(
       JSON.stringify({
-        lessons,
-        totalCount: count || 0,
-        page,
-        totalPages: Math.ceil((count || 0) / limit),
+        totalCount,
         suggestions,
         expandedQuery: smartSearchQuery,
       }),
