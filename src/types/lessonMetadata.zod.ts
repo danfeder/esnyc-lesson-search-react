@@ -3,7 +3,7 @@
  *
  * Source of truth for the canonical lesson shape — consumed by
  * process-submission (LLM-draft writer in PR 2; canonical keys), data-import
- * scripts, and the Stage 2 corpus re-tag (PR 6+).
+ * scripts, and (historically) the Stage 2 corpus re-tag pipeline, retired 2026-10.
  *
  * Companion schema `reviewFormPayload.zod.ts` captures the review-form shape
  * (themes/season/location keys, single-select strings) that complete-review
@@ -30,27 +30,30 @@
  * Still genuinely open `z.array(z.string())`: thematicCategories,
  * culturalHeritage, locationRequirements (later worksheets), and gradeLevels.
  *
- * Sync discipline: this file is the canonical source. `enums.json` is
- * generated from it via `scripts/generate-enums-json.ts`. The edge mirror
+ * Sync discipline: this file is the canonical source. The edge mirror
  * `supabase/functions/_shared/metadataSchemas.ts` and the SQL CHECK
  * constraints are hand-synced from these value lists; the equivalence test
  * (`edgeSharedSchemas.equivalence.test.ts`) enforces lock-step parity with
- * the edge mirror. See validator architecture doc Decision 6 for sync-test
- * details.
+ * the edge mirror. The generated `src/types/generated/enums.json` mirror and
+ * `scripts/generate-enums-json.ts` were retired in 2026-10 together with the
+ * Stage 2 re-tag pipeline (its only runtime reader); the `-- SOURCE:
+ * enums.json[...]` comments in older migrations are historical. Sync new SQL
+ * CHECK values straight from the arrays below. See validator architecture
+ * doc Decision 6 for sync-test details.
  */
 import { z } from 'zod';
 // Cultural Heritage closed vocabulary (Brief 4 — reviewer field closed 2026-07-03).
 // Unlike the inline literals below, the 71 heritage values are GENERATED from the
 // single source of truth (data/vocab/cultural-heritage.vocab.json) via
 // scripts/heritage/generate-heritage-hierarchy.ts, so the closed reviewer list can
-// never drift from the vocab. Relative (not `@/`) import so the tsx build scripts
-// that consume this file (e.g. scripts/generate-enums-json.ts) resolve it too.
+// never drift from the vocab.
+// Relative (not `@/`) import so this file also resolves under plain tsc/tsx
+// tooling that lacks Vite's `@/` alias.
 import { CULTURAL_HERITAGE_VALUES } from '../utils/heritageHierarchy.generated';
 
 // =============================================================================
-// Closed-enum value lists (single source of truth — also exported so
-// scripts/generate-enums-json.ts can serialize them to JSON for cross-runtime
-// mirrors).
+// Closed-enum value lists (single source of truth — exported so the edge
+// equivalence test and the vocab drift-lock tests can import them).
 // =============================================================================
 
 export const ACTIVITY_TYPE_VALUES = ['cooking', 'garden', 'academic', 'craft'] as const;

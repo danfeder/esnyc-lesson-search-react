@@ -115,6 +115,15 @@ git show ba34cac0:scripts/<file> > scripts/<file>   # ba34cac0 = the main commit
   `crf-thresholds.json`, `crf-vocab.json`) (+ npm script `eval:llm-tagging`)
 - **Test file for an archived feature:** `dedup-sweep/trigram.test.ts` (12 tests)
 
+### Retired without moving — 2026-10 (refactor audit §3.2)
+
+| Path | What it was | Where to find it |
+|------|-------------|------------------|
+| `scripts/stage2-retag/` — everything except `data/c02-vocab.json` and `data/smaller-fields.vocab.json` | The Stage 2 / C02 corpus re-tag pipeline (TS+Zod batch runner, 25 test files, fixtures, prompts, 3.7 MB of run artifacts). Completed and applied to PROD 2026-06-26; never re-run. | `git show <the PR's merge commit>^:scripts/stage2-retag/<file>` |
+| `scripts/generate-enums-json.ts`, `src/types/generated/enums.json` (+ freshness test) | Generated enum mirror whose only runtime reader was the pipeline above. | same |
+
+Deleted rather than moved: the code imported a dependency removed in the same change and would never run again; git history is the durable record (see `docs/ARCHIVE_POLICY.md`, "delete" list).
+
 ## Usage Notes
 
 These scripts should NOT be run in production. They were created for specific debugging scenarios that have been resolved.

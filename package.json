@@ -32,8 +32,7 @@
     "eval:search": "npx tsx scripts/search-eval/run-search-eval.ts",
     "test:e2e": "npx playwright test",
     "test:e2e:headed": "npx playwright test --headed",
-    "test:e2e:ui": "npx playwright test --ui",
-    "generate:enums": "npx tsx scripts/generate-enums-json.ts"
+    "test:e2e:ui": "npx playwright test --ui"
   },
   "keywords": [
     "education",
@@ -69,7 +68,6 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.95.0",
     "@eslint/js": "^9.33.0",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.58.2",

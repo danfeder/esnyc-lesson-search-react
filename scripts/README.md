@@ -108,6 +108,17 @@ The `scripts/archive/` directory holds deprecated scripts kept for reference onl
 
 The 2026-10 scripts sweep deleted roughly 60 one-off scripts outright (duplicate-detection toolchain, embeddings pipeline, Google-Docs import one-offs, 2025-08 hash repair, superseded smoke scripts, one-off SQL, a spent codemod, the eval-data track) instead of archiving them. Git history is the durable record: recover any of them with `git show ba34cac0:scripts/<file> > scripts/<file>` (the commit the sweep branched from). The full list of deleted paths is in `scripts/archive/README.md`.
 
+## Reference data kept on purpose
+
+Frozen inputs that live tests and generators still read. Do not delete or move them in a cleanup sweep; git history holds the tooling that produced them. `scripts/stage2-retag/` now holds only its `data/` files — the pipeline itself was retired in 2026-10.
+
+| File | Why it stays | Read by |
+|------|--------------|---------|
+| `scripts/stage2-retag/data/c02-vocab.json` | Frozen C02 cooking-skills / main-ingredients manifest — byte-source of the Zod enums and the DB CHECK | `src/types/cookingIngredientsVocab.zod.test.ts` |
+| `scripts/stage2-retag/data/smaller-fields.vocab.json` | Locked six small-field vocab — canonical targets for legacy review-row canonicalization | `src/utils/canonicalizeReviewMetadata.test.ts` |
+| `data/vocab/cultural-heritage.vocab.json` | Single source of truth for the cultural-heritage hierarchy | `scripts/heritage/generate-heritage-hierarchy.ts` |
+| `data/vocab/academic-concepts.vocab.json` | Frozen emitted artifact behind migrations `20260612000000_pr5b_concepts_canonicalization.sql` and `20260613000000_fold_urban_revitalization_concept.sql`; no live code reads it any more | provenance only (archived generators in `scripts/archive/` still name it) — keep |
+
 ## Development Notes
 
 ### Adding New Scripts
