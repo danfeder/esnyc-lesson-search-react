@@ -2221,7 +2221,8 @@ WHERE '5' = ANY(grade_levels) AND 'garden' = ANY(activity_type);
 **smart-search** (`supabase/functions/smart-search/`)
 - Purpose: Generate search suggestions when query returns 0 results
 - Input: `{ query, filters }`
-- Output: `{ suggestions: string[], expandedQuery: string }`
+- Output: `{ totalCount: number, suggestions: string[], expandedQuery: string | null }`
+- Rows are never returned (count-only query)
 - Used by: `useLessonSuggestions` hook
 - Called when: Total results = 0
 
@@ -2250,11 +2251,10 @@ WHERE '5' = ANY(grade_levels) AND 'garden' = ANY(activity_type);
 **send-email** (`supabase/functions/send-email/`)
 - Purpose: Send transactional emails (invitations, notifications)
 - Provider: Resend (RESEND_API_KEY in secrets)
-- Templates: Invitation, password reset, submission approved
+- Templates: Invitation (admin JWT), account-deactivated / account-reactivated (service role, from user-management)
 
 **invitation-management** (`supabase/functions/invitation-management/`)
-- Purpose: Create/send invitations, track acceptance
-- Calls: send-email function
+- Purpose: Accept an invitation (public, token-gated): creates the auth user + `user_profiles` row, marks `user_invitations.accepted_at`, writes the audit row. Admin create/list/resend/cancel happen in the admin pages directly (C128, 2026-10-21)
 - Updates: user_invitations table
 - Creates: user_profiles on acceptance
 

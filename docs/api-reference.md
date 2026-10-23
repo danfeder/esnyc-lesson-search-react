@@ -1,349 +1,59 @@
-# ESYNYC Lesson Search API Reference
+# ESYNYC Lesson Search — Edge Function Reference
 
-## Overview
+Last verified against `supabase/functions/` on 2026-10-23. Nine functions are deployed from this repo (TEST and PROD). Those nine are deployed with `--no-verify-jwt`, so each one authenticates in code (see `supabase/functions/CLAUDE.md`). Base URL: `${SUPABASE_URL}/functions/v1/<name>`. Every function answers `OPTIONS` (CORS preflight) and returns JSON.
 
-This document provides a comprehensive reference for all Supabase Edge Functions in the ESYNYC Lesson Search application.
+Auth modes:
+- **user JWT** — `Authorization: Bearer <user access token>`; the function then checks `user_profiles.role`.
+- **service role** — `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` (server-to-server only; constant-time compared).
+- **anon key** — `Authorization: Bearer <VITE_SUPABASE_ANON_KEY>`.
 
-## Authentication
+## smart-search — `POST` — anon key
+Zero-result search suggestions for the public search page (`src/hooks/useLessonSuggestions.ts`). Expands the query through `search_synonyms` (plus prefix variants), then counts matching non-retired rows of `lessons_with_metadata`. Rows are never returned; public search uses the `search_lessons` RPC.
+- Request: `{ query?: string; filters?: { gradeLevels?, thematicCategories?, seasons?, coreCompetencies?, culturalHeritage?, location?, activityType?, tags?: string[]; includeAllSeasons?: boolean } }` — other fields are ignored.
+- Response: `{ totalCount: number; suggestions: string[]; expandedQuery: string | null }`. `suggestions` (max 5) is non-empty only when a query was given and `totalCount` is 0. `expandedQuery` is the tsquery used, e.g. `corn:* | maize:*`.
+- Errors: `500 { error: 'Search failed', message }`.
 
-All edge functions use Supabase JWT authentication. Include the authorization header:
-```
-Authorization: Bearer <supabase-jwt-token>
-```
+## process-submission — `POST` — user JWT (teacher)
+- Request: `{ googleDocUrl?: string; submissionType?: 'new' | 'update'; originalLessonId?: string; submissionId?: string; resubmit?: boolean }` (`resubmit: true` + `submissionId` re-snapshots an existing `needs_revision` row).
+- Response: `{ success: true, data: { submissionId, status, extractedTitle, duplicatesFound, topDuplicates[] } }`; failures `400 { success: false, error }`.
 
-## Edge Functions
+## extract-google-doc — `POST` — service role or any user JWT
+- Request: `{ googleDocUrl: string }`
+- Response: `{ success: true, data: { docId, title, content, metadata: { wordCount, extractionMethod, hasImages }, metadataSketch, driveMetadata, extractedAt } }`; failures `{ success: false, error, fallbackReason? }`.
 
-### 1. Search Lessons
+## detect-duplicates — `POST` — service role or user JWT (reviewer / admin / super_admin)
+- Request: `{ submissionId: string; content: string; title: string; metadata?: object }`
+- Response: `{ success: true, data: { submissionId, contentHash, duplicatesFound, duplicates: Array<{ lessonId, title, similarityScore, matchType: 'exact' | 'high' | 'medium' | 'low', … }> } }` (top 10); failures `400 { success: false, error }`. Writes `submission_similarities`.
 
-**Endpoint:** `/search-lessons`  
-**Method:** POST  
-**Description:** Advanced full-text search with filtering capabilities
+## complete-review — `POST` — user JWT (reviewer / admin / super_admin)
+- Request: `{ submissionId: string; decision: 'approve_new' | 'approve_update' | 'needs_revision' | 'reject'; metadata?: object; notes?: string; selectedLessonId?: string | null }` (`selectedLessonId` required for `approve_update`).
+- Response: `{ success: true, lessonId: string | null, decision }`; errors `{ error, code?, detail? }` with 400 / 401 / 403 / 405 / 500. Calls the `complete_review_atomic` RPC. Decision e-mails were retired for launch (T3, 2026-07-01).
 
-#### Request Body
-```typescript
-{
-  searchTerm?: string;           // Search query
-  filters?: {
-    activity_type?: string[];
-    location?: string[];
-    grade_levels?: string[];
-    thematic_categories?: string[];
-    season?: string[];
-    include_year_round?: boolean;
-    core_competencies?: string[];
-    cultural_heritage?: string[];
-    lesson_format?: string;
-    academic_integration?: string[];
-    sel_competencies?: string[];
-    cooking_method?: string;
-  };
-  page?: number;                 // Default: 1
-  limit?: number;                // Default: 20, Max: 100
-}
-```
+## send-email — `POST` — service role, or admin/super_admin user JWT for `invitation` only
+- Request: `{ type: 'invitation' | 'account-deactivated' | 'account-reactivated'; to: string; data: { … } }`
+  - `invitation` — `data: { invitationId, token, inviterName, role, customMessage?, permissions?: string[], expiresAt }` (sent by the admin pages `AdminInviteUser` / `AdminInvitations`).
+  - `account-deactivated` / `account-reactivated` — service role only; `data: { recipientName, role?, deactivatedBy | reactivatedBy, reason? }` (sent by `user-management`).
+- Response: `{ success: true, emailId }` via Resend, or `{ success: true, message: 'Email logged (development mode)', email }` when `RESEND_API_KEY` is unset. Errors: `400` unknown type, `401` / `403` auth, `500` Resend failure.
 
-#### Response
-```typescript
-{
-  lessons: Lesson[];
-  totalCount: number;
-  page: number;
-  totalPages: number;
-}
-```
+## user-management — `POST /users/bulk` — user JWT (admin / super_admin)
+The only route. Everything else (schools, single-user read/update/deactivate) is done by the admin pages directly against the database under RLS.
+- Request: `{ action: 'activate' | 'deactivate' | 'delete'; userIds: string[] }` (`delete` = soft delete: `is_active=false`, notes get ` [DELETED]`).
+- Response: `{ success: true, affected: number, failed: string[] }`; errors 400 / 401 / 403 / 404 / 500.
+- Invoke from the app as `supabase.functions.invoke('user-management/users/bulk', …)` — the sub-path must be in the invoke target.
 
-### 2. Smart Search
+## invitation-management — `POST /invitations/accept` — anon key (token-gated)
+The only route. Creating, listing, resending and cancelling invitations is done by the admin pages directly against `user_invitations` under RLS, with `send-email` for delivery.
+- Request: `{ token: string; password: string; fullName: string; gradesTaught?: string[]; subjectsTaught?: string[] }`
+- Response: `{ success: true, userId }`; errors `400` (missing fields / expired / already accepted / email already registered), `404` invalid token, `500`.
 
-**Endpoint:** `/smart-search`  
-**Method:** POST  
-**Description:** AI-enhanced search using embeddings (currently using mock similarity)
+## sync-drive-metadata — `POST` — `Authorization: Bearer <DRIVE_SYNC_TOKEN>` (scheduled workflow)
+- Request: `{ cursor?: string | null; batchSize?: number }`
+- Response: `{ success: true, processedRows, updatedRows, unreadableFiles, transientFailures, unresolvableRows, nextCursor, done }`; `401` on a bad token, `405` on non-POST.
 
-#### Request Body
-```typescript
-{
-  query: string;                 // Natural language query
-  limit?: number;                // Default: 10
-  threshold?: number;            // Similarity threshold (0-1)
-}
-```
+## Environment variables (Supabase dashboard → Edge Function secrets)
+`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `ALLOWED_ORIGINS`, `PUBLIC_SITE_URL`, `RESEND_API_KEY` (send-email), `GOOGLE_SERVICE_ACCOUNT_JSON` + `GOOGLE_IMPERSONATE_EMAIL` (extract-google-doc, sync-drive-metadata), `DRIVE_SYNC_TOKEN` (sync-drive-metadata), `ANTHROPIC_API_KEY` + `ENABLE_AI_AUTO_TAG` (process-submission). (Exact set from `grep -rhoE "Deno\.env\.get\('[A-Z_]+'\)" supabase/functions --include='*.ts' | sort -u`; there is no `OPENAI_API_KEY` reader any more.)
 
-#### Response
-```typescript
-{
-  results: {
-    lesson: Lesson;
-    similarity: number;
-    relevance_explanation?: string;
-  }[];
-}
-```
-
-### 3. Process Submission
-
-**Endpoint:** `/process-submission`  
-**Method:** POST  
-**Description:** Process new lesson submissions with content extraction
-
-#### Request Body
-```typescript
-{
-  submissionId: string;          // ID of submission to process
-}
-```
-
-#### Response
-```typescript
-{
-  success: boolean;
-  message: string;
-  processedData?: {
-    title: string;
-    content: string;
-    metadata: object;
-  };
-}
-```
-
-### 4. Extract Google Doc
-
-**Endpoint:** `/extract-google-doc`  
-**Method:** POST  
-**Description:** Extract content from Google Docs (production: real API, dev: mock fallback)
-
-#### Request Body
-```typescript
-{
-  docUrl: string;                // Google Doc URL
-  docId?: string;                // Alternative: Doc ID
-}
-```
-
-#### Response
-```typescript
-{
-  title: string;
-  content: string;
-  extractedAt: string;
-  metadata?: {
-    lastModified?: string;
-    author?: string;
-  };
-}
-```
-
-### 5. Detect Duplicates
-
-**Endpoint:** `/detect-duplicates`  
-**Method:** POST  
-**Description:** Find potential duplicate lessons using similarity scoring
-
-#### Request Body
-```typescript
-{
-  lessonId?: string;             // Check specific lesson
-  threshold?: number;            // Similarity threshold (0-1)
-  limit?: number;                // Max duplicates to return
-}
-```
-
-#### Response
-```typescript
-{
-  duplicates: {
-    lesson1_id: string;
-    lesson2_id: string;
-    similarity_score: number;
-    comparison_details: {
-      title_similarity: number;
-      content_similarity: number;
-      metadata_similarity: number;
-    };
-  }[];
-}
-```
-
-### 6. User Management
-
-**Endpoint:** `/user-management`  
-**Method:** POST  
-**Description:** Admin endpoint for user operations
-
-#### Request Body
-```typescript
-{
-  action: 'update_role' | 'deactivate' | 'reactivate';
-  userId: string;
-  data?: {
-    role?: string;               // For update_role
-    permissions?: string[];      // For update_role
-  };
-}
-```
-
-#### Response
-```typescript
-{
-  success: boolean;
-  user?: UserProfile;
-  message?: string;
-}
-```
-
-### 7. Invitation Management
-
-**Endpoint:** `/invitation-management`  
-**Method:** POST  
-**Description:** Handle user invitations
-
-#### Request Body
-```typescript
-{
-  action: 'create' | 'resend' | 'cancel' | 'accept';
-  data: {
-    email?: string;              // For create
-    role?: string;               // For create
-    invitationId?: string;       // For resend/cancel
-    token?: string;              // For accept
-  };
-}
-```
-
-#### Response
-```typescript
-{
-  success: boolean;
-  invitation?: Invitation;
-  message?: string;
-}
-```
-
-### 8. Send Email
-
-**Endpoint:** `/send-email`  
-**Method:** POST  
-**Description:** Send transactional emails via Resend
-
-#### Request Body
-```typescript
-{
-  type: 'invitation' | 'role_changed' | 'submission_approved' | 'submission_rejected';
-  to: string;
-  data: {
-    // Type-specific data
-    inviteLink?: string;
-    userName?: string;
-    newRole?: string;
-    submissionTitle?: string;
-    rejectionReason?: string;
-  };
-}
-```
-
-#### Response
-```typescript
-{
-  success: boolean;
-  messageId?: string;
-  error?: string;
-}
-```
-
-### 9. Password Reset
-
-**Endpoint:** `/password-reset`  
-**Method:** POST  
-**Description:** Initiate password reset flow
-
-#### Request Body
-```typescript
-{
-  email: string;
-  redirectTo?: string;           // Custom redirect URL
-}
-```
-
-#### Response
-```typescript
-{
-  success: boolean;
-  message: string;
-}
-```
-
-## Error Responses
-
-All endpoints return errors in this format:
-```typescript
-{
-  error: string;                 // Error message
-  code?: string;                 // Error code
-  status: number;                // HTTP status code
-}
-```
-
-### Common Status Codes
-- 200: Success
-- 400: Bad Request
-- 401: Unauthorized
-- 403: Forbidden
-- 404: Not Found
-- 500: Internal Server Error
-
-## Rate Limiting
-
-Edge functions are rate-limited by Supabase:
-- Anonymous requests: 100/hour
-- Authenticated requests: 1000/hour
-
-## CORS Configuration
-
-Allowed origins are configured via environment variable:
-- Development: `http://localhost:5173`
-- Production: `https://app.esynyc.org`
-
-## Environment Variables
-
-Edge functions require these environment variables (set in Supabase dashboard):
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `GOOGLE_SERVICE_ACCOUNT_JSON` (for Google Docs)
-- `OPENAI_API_KEY` (for embeddings)
-- `RESEND_API_KEY` (for emails)
-- `PUBLIC_SITE_URL`
-- `ALLOWED_ORIGINS`
-
-## Testing Edge Functions
-
-### Local Testing
-```bash
-# Start Supabase locally
-supabase start
-
-# Test function
-curl -i --location --request POST 'http://localhost:54321/functions/v1/search-lessons' \
-  --header 'Authorization: Bearer YOUR_ANON_KEY' \
-  --header 'Content-Type: application/json' \
-  --data '{"searchTerm": "tomato"}'
-```
-
-### Production Testing
-Replace localhost URL with your Supabase project URL.
-
-## Implementation Notes
-
-1. **Google Docs Integration**: Currently returns mock data. Real implementation requires:
-   - Google Cloud service account
-   - Docs API permissions
-   - Proper error handling for rate limits
-
-2. **OpenAI Embeddings**: Working in production. Requirements:
-   - `OPENAI_API_KEY` environment variable (configured in production)
-   - Uses `text-embedding-3-small` model for semantic similarity
-   - Falls back gracefully if API fails
-
-3. **Email Sending**: Requires Resend API key and verified domain
-
-4. **Error Handling**: All functions include try-catch blocks and return appropriate error messages
-
-5. **Performance**: Functions use connection pooling and are optimized for cold starts
+## Testing
+- Daily PROD smoke: `npm run test:edge-functions` (`scripts/test-edge-functions.mjs`; full smoke of smart-search, OPTIONS health check of six others; scheduled by `.github/workflows/edge-function-smoke.yml`).
+- Deploys: `.github/workflows/deploy-edge-functions.yml` (PR → TEST, merge → PROD after manual approval).
+- Local: `supabase functions serve <name> --no-verify-jwt`, then `curl -X POST http://localhost:54321/functions/v1/<name> -H 'Content-Type: application/json' -d '{…}'`.
