@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
-import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
+import { bearerToken, isServiceRoleToken, requireUserWithRole } from '../_shared/auth.ts';
 import { calculateMetadataOverlap } from './similarity.ts';
 
 interface DetectDuplicatesRequest {
@@ -94,42 +94,27 @@ serve(async (req) => {
     // service-role client (RLS-bypassing), so it MUST gate access in-code.
     // Accept either the service-role key (server-to-server callers like
     // process-submission) or an authenticated reviewer/admin/super_admin user.
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    const token = bearerToken(req);
+    if (!token) {
       return new Response(
         JSON.stringify({ success: false, error: 'Authentication required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    const token = authHeader.replace('Bearer ', '');
-    // Use constant-time comparison to prevent timing attacks.
-    const tokenBytes = new TextEncoder().encode(token);
-    const keyBytes = new TextEncoder().encode(supabaseServiceKey);
-    const isServiceRole =
-      tokenBytes.length === keyBytes.length &&
-      timingSafeEqual(tokenBytes, keyBytes);
-
-    if (!isServiceRole) {
+    if (!isServiceRoleToken(token, supabaseServiceKey)) {
       // Not the service-role key — require an authenticated reviewer/admin user.
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser(token);
-      if (authError || !user) {
+      const gate = await requireUserWithRole(supabase, token, ['reviewer', 'admin', 'super_admin']);
+      if (!gate.ok) {
+        const unauthenticated = gate.reason === 'invalid_token';
         return new Response(
-          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-      if (!profile || !['reviewer', 'admin', 'super_admin'].includes(profile.role)) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Insufficient permissions' }),
-          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({
+            success: false,
+            error: unauthenticated ? 'Invalid authentication token' : 'Insufficient permissions',
+          }),
+          {
+            status: unauthenticated ? 401 : 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
         );
       }
     }

@@ -7,7 +7,7 @@ import {
   extractMetadataFromContent,
 } from '../_shared/google-docs-parser.ts';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
-import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
+import { bearerToken, isServiceRoleToken, requireUserWithRole } from '../_shared/auth.ts';
 
 interface ExtractRequest {
   googleDocUrl: string;
@@ -24,8 +24,8 @@ serve(async (req) => {
 
   try {
     // Require authentication — this function should only be invoked internally
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    const token = bearerToken(req);
+    if (!token) {
       return new Response(
         JSON.stringify({ success: false, error: 'Authentication required' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -41,19 +41,11 @@ serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-    const token = authHeader.replace('Bearer ', '');
-    // Use constant-time comparison to prevent timing attacks
-    const tokenBytes = new TextEncoder().encode(token);
-    const keyBytes = new TextEncoder().encode(supabaseServiceKey);
-    const isServiceRole =
-      tokenBytes.length === keyBytes.length &&
-      timingSafeEqual(tokenBytes, keyBytes);
-
-    if (!isServiceRole) {
-      // Verify user token
+    if (!isServiceRoleToken(token, supabaseServiceKey)) {
+      // Verify user token (any authenticated user; no role requirement here).
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      if (authError || !user) {
+      const gate = await requireUserWithRole(supabase, token, null);
+      if (!gate.ok) {
         return new Response(
           JSON.stringify({ success: false, error: 'Invalid authentication token' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

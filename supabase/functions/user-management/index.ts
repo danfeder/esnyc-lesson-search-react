@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.1';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { bearerToken, requireUserWithRole } from '../_shared/auth.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -21,40 +22,27 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     // Verify authentication
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    const token = bearerToken(req);
+    if (!token) {
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Check admin permissions
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-      return new Response(JSON.stringify({ error: 'Insufficient permissions' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    const gate = await requireUserWithRole(supabase, token, ['admin', 'super_admin']);
+    if (!gate.ok) {
+      const unauthenticated = gate.reason === 'invalid_token';
+      return new Response(
+        JSON.stringify({ error: unauthenticated ? 'Invalid token' : 'Insufficient permissions' }),
+        {
+          status: unauthenticated ? 401 : 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
+    const user = gate.user;
 
     // Route handling.
     // Supabase serves this function under a path that still contains the
@@ -208,8 +196,8 @@ serve(async (req) => {
                     data: {
                       recipientName: affectedUser.full_name || userEmail,
                       ...(willBeActive
-                        ? { reactivatedBy: profile.full_name || user.email }
-                        : { deactivatedBy: profile.full_name || user.email }),
+                        ? { reactivatedBy: user.email }
+                        : { deactivatedBy: user.email }),
                     },
                   }),
                 });

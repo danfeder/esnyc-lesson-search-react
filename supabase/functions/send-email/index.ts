@@ -1,7 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.1';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
-import { timingSafeEqual } from '../_shared/timing-safe-equal.ts';
+import {
+  bearerToken,
+  isServiceRoleToken,
+  requireUserWithRole,
+  type GateUser,
+} from '../_shared/auth.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -50,22 +55,17 @@ serve(async (req) => {
     // - Service-role bearer → allowed for ANY type (trusted backend callers).
     // - Backend-only types from a non-service-role caller → rejected (closes the spoof hole).
     // - Browser type (invitation) → requires an admin/super_admin user JWT.
-    let user = null;
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    let user: GateUser | null = null;
+    const token = bearerToken(req);
+    if (!token) {
       return new Response(JSON.stringify({ error: 'No authorization header' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const token = authHeader.replace('Bearer ', '');
 
-    // Constant-time service-role check (mirror extract-google-doc:42-60).
-    const tokenBytes = new TextEncoder().encode(token);
-    const keyBytes = new TextEncoder().encode(SUPABASE_SERVICE_ROLE_KEY);
-    const isServiceRole =
-      tokenBytes.length === keyBytes.length &&
-      timingSafeEqual(tokenBytes, keyBytes);
+    // Constant-time service-role check (shared helper, _shared/auth.ts).
+    const isServiceRole = isServiceRoleToken(token, SUPABASE_SERVICE_ROLE_KEY);
 
     // Email types only legitimately sent by trusted backend services (never a browser).
     const SERVICE_ROLE_ONLY_TYPES = new Set(['account-deactivated', 'account-reactivated']);
@@ -89,33 +89,18 @@ serve(async (req) => {
         });
       }
       // Browser type (invitation) requires an admin/super_admin user JWT.
-      const {
-        data: { user: authUser },
-        error: authError,
-      } = await supabase.auth.getUser(token);
-
-      if (authError || !authUser) {
-        return new Response(JSON.stringify({ error: 'Invalid token' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      const gate = await requireUserWithRole(supabase, token, ['admin', 'super_admin']);
+      if (!gate.ok) {
+        const unauthenticated = gate.reason === 'invalid_token';
+        return new Response(
+          JSON.stringify({ error: unauthenticated ? 'Invalid token' : 'Insufficient permissions' }),
+          {
+            status: unauthenticated ? 401 : 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       }
-
-      user = authUser;
-
-      // Check if user has permission to send emails (admin or super_admin)
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-        return new Response(JSON.stringify({ error: 'Insufficient permissions' }), {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      user = gate.user;
     }
 
     if (!RESEND_API_KEY) {
