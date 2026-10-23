@@ -1,6 +1,7 @@
-// Shared CORS configuration for edge functions
-// Use restrictedCors for authenticated/internal endpoints
-// Use publicCors for public-facing endpoints (search, embeddings)
+// Shared origin-restricted CORS for every edge function (see
+// supabase/functions/CLAUDE.md, Key Rules). ALLOWED_ORIGINS (comma-separated
+// edge secret) overrides the default list; a '*' in an entry matches exactly
+// one DNS label ([a-zA-Z0-9-]+) and the whole origin must match.
 
 const ALLOWED_ORIGINS = Deno.env.get('ALLOWED_ORIGINS')?.split(',') || [
   'http://localhost:5173',
@@ -35,8 +36,3 @@ export function getRestrictedCorsHeaders(origin: string | null) {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
   };
 }
-
-export const publicCorsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
