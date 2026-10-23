@@ -58,10 +58,7 @@ export function AdminUsers() {
     search: '',
     role: 'all',
     is_active: 'all',
-    school_borough: 'all',
     schoolId: 'all',
-    sort_by: 'created_at',
-    sort_order: 'desc',
   });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -114,15 +111,7 @@ export function AdminUsers() {
         query = query.eq('is_active', filters.is_active === 'active');
       }
 
-      if (filters.school_borough !== 'all') {
-        query = query.eq('school_borough', filters.school_borough as string);
-      }
-
-      if (filters.sort_by !== 'email') {
-        query = query.order(filters.sort_by || 'created_at', {
-          ascending: filters.sort_order === 'asc',
-        });
-      }
+      query = query.order('created_at', { ascending: false });
 
       const from = (page - 1) * USERS_PER_PAGE;
       const to = from + USERS_PER_PAGE - 1;
@@ -200,13 +189,6 @@ export function AdminUsers() {
             reviewCount: counts.reviews,
           };
         });
-
-        if (filters.sort_by === 'email') {
-          merged.sort((a, b) => {
-            const comparison = a.email.localeCompare(b.email);
-            return filters.sort_order === 'asc' ? comparison : -comparison;
-          });
-        }
 
         setUsers(
           merged.map(

@@ -347,7 +347,8 @@ export const INGREDIENT_PARENT_MAP: Record<string, string | null> = {
 // =============================================================================
 
 export const ActivityTypeEnum = z.enum(ACTIVITY_TYPE_VALUES);
-export const TagEnum = z.enum(TAG_VALUES);
+// TagEnum / MainIngredientsEnum are intra-file only. The edge mirror (supabase/functions/_shared/metadataSchemas.ts) still exports its copies — deliberate divergence; editing supabase/functions/** triggers an edge redeploy.
+const TagEnum = z.enum(TAG_VALUES);
 export const SeasonTimingEnum = z.enum(SEASON_TIMING_VALUES);
 export const CulturalResponsivenessFeatureEnum = z.enum(CULTURAL_RESPONSIVENESS_FEATURE_VALUES);
 export const AcademicIntegrationEnum = z.enum(ACADEMIC_INTEGRATION_VALUES);
@@ -357,7 +358,7 @@ export const CookingMethodsEnum = z.enum(COOKING_METHODS_VALUES);
 export const ObservancesHolidaysEnum = z.enum(OBSERVANCES_HOLIDAYS_VALUES);
 export const GardenSkillsEnum = z.enum(GARDEN_SKILLS_VALUES);
 export const CookingSkillsEnum = z.enum(COOKING_SKILLS_VALUES);
-export const MainIngredientsEnum = z.enum(MAIN_INGREDIENTS_VALUES);
+const MainIngredientsEnum = z.enum(MAIN_INGREDIENTS_VALUES);
 // Cultural Heritage closed 2026-07-03 (Brief 4). Values GENERATED from the vocab
 // (see import above); the reviewer control offers exactly these and no free text.
 export const CulturalHeritageEnum = z.enum(CULTURAL_HERITAGE_VALUES);

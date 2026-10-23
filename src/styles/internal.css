@@ -113,15 +113,6 @@
 }
 .int-nav-link--cta:hover { background: var(--color-esy-green-deep); color: var(--color-esy-white); }
 
-.int-count {
-  font-family: var(--font-display);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 11px;
-  color: var(--color-esy-ink-70);
-}
-
 /* --- Shell layout ---------------------------------------------------- */
 .int-shell {
   display: grid;

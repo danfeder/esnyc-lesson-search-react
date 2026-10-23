@@ -1,5 +1,5 @@
 // Academic Integration can be either a simple array or an object with concepts
-export interface AcademicIntegrationObject {
+interface AcademicIntegrationObject {
   concepts: Record<string, string[]>;
   selected: string[];
 }
@@ -37,10 +37,6 @@ export interface LessonMetadata {
   locationRequirements?: string[];
   activityType: string[];
   mainIngredients?: string[];
-  skills?: string[];
-  equipment?: string[];
-  duration?: string;
-  groupSize?: string;
   gradeLevels?: string[];
   gardenSkills?: string[];
   cookingSkills?: string[];

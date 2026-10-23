@@ -20,7 +20,6 @@ import {
   Clock,
   FileText,
   GitMerge,
-  KeyRound,
   Pencil,
   User,
   UserX,
@@ -879,19 +878,6 @@ export function AdminUserDetail() {
                   </h3>
                   <p>Account-level actions. All are logged in the audit trail.</p>
                   <div className="adm-danger-zone-actions">
-                    <div className="adm-danger-zone-row">
-                      <div>
-                        <div className="adm-danger-zone-row-title">Send password reset</div>
-                        <div>
-                          Admin-initiated password reset needs a service-role endpoint. Ask the user
-                          to click <em>Forgot password</em> from the sign-in screen for now.
-                        </div>
-                      </div>
-                      <IntButton disabled title="Not yet wired — needs a service-role endpoint">
-                        <KeyRound className="w-4 h-4" aria-hidden="true" />
-                        <span>Send link</span>
-                      </IntButton>
-                    </div>
                     <div className="adm-danger-zone-row">
                       <div>
                         <div className="adm-danger-zone-row-title">

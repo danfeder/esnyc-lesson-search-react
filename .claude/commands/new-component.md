@@ -9,6 +9,6 @@ Create the component following these patterns:
 - Define `interface ComponentNameProps { }` for props
 - Add `// eslint-disable-next-line no-unused-vars` above callback prop types
 - Use `@/` path aliases for imports
-- Add to the barrel export in the feature folder's `index.ts`
+- Import components by direct path (`@/components/FeatureName/ComponentName`); do not create or extend barrel `index.ts` files (only `Internal/` and `Schools/` keep one)
 
 After creation, run `npm run type-check` to verify.
