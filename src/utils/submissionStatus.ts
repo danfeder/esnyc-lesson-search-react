@@ -32,3 +32,11 @@ export const STATUS_LABEL: Record<SubmissionStatus, string> = {
   approved: 'Approved',
   rejected: 'Rejected',
 };
+
+/**
+ * Badge for a status read from an untyped source (edge-function payloads,
+ * joined rows typed as `string`). Unknown values fall back to 'submitted'.
+ */
+export function badgeForStatus(status: string): IntStatus {
+  return STATUS_TO_BADGE[status as SubmissionStatus] ?? 'submitted';
+}

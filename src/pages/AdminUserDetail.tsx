@@ -35,8 +35,8 @@ import {
   IntRoleBadge,
   IntStatusBadge,
   type IntRole,
-  type IntStatus,
 } from '@/components/Internal';
+import { badgeForStatus } from '@/utils/submissionStatus';
 
 type Tab = 'activity' | 'access' | 'profile';
 
@@ -70,21 +70,6 @@ function avatarTone(role: string): string {
   if (role === 'admin' || role === 'super_admin') return 'adm-avatar--ink';
   if (role === 'reviewer') return 'adm-avatar--green';
   return '';
-}
-
-function statusToBadge(status: string): IntStatus {
-  switch (status) {
-    case 'submitted':
-      return 'submitted';
-    case 'in_review':
-      return 'review';
-    case 'needs_revision':
-      return 'revision';
-    case 'approved':
-      return 'approved';
-    default:
-      return 'submitted';
-  }
 }
 
 export function AdminUserDetail() {
@@ -710,7 +695,7 @@ export function AdminUserDetail() {
                       <li key={s.id}>
                         <div className="adm-recent-title">{s.title || 'Untitled submission'}</div>
                         <div className="adm-recent-meta">
-                          <IntStatusBadge status={statusToBadge(s.status)} />
+                          <IntStatusBadge status={badgeForStatus(s.status)} />
                           <span>
                             {s.created_at
                               ? formatDistanceToNow(new Date(s.created_at), { addSuffix: true })

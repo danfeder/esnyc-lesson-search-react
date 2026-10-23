@@ -6,6 +6,7 @@ import { Permission, UserInvitation } from '@/types/auth';
 import { Download, Plus, Search, Send, XCircle } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { logger } from '@/utils/logger';
+import { downloadCsv } from '@/utils/csvExport';
 import { sendInvitationEmail } from '@/utils/invitationEmail';
 import {
   IntAlert,
@@ -347,15 +348,7 @@ export function AdminInvitations() {
   // --- Export -----------------------------------------------------------
 
   const exportToCSV = () => {
-    // Defend against CSV injection: prefix cells beginning with =/+/-/@ (and
-    // tab/CR which Excel also treats as formula starts) with a single quote so
-    // Excel/Sheets render them as literal text. Also double up embedded `"` per
-    // RFC 4180 so values containing quotes don't break the CSV format.
-    const escapeCell = (raw: string): string => {
-      const value = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
-      return `"${value.replace(/"/g, '""')}"`;
-    };
-    const csv = [
+    const rows: string[][] = [
       [
         'Email',
         'Role',
@@ -378,17 +371,9 @@ export function AdminInvitations() {
         format(new Date(inv.expires_at), 'yyyy-MM-dd HH:mm'),
         inv.accepted_at ? format(new Date(inv.accepted_at), 'yyyy-MM-dd HH:mm') : '',
       ]),
-    ]
-      .map((row) => row.map(escapeCell).join(','))
-      .join('\n');
+    ];
 
-    const blob = new window.Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = `invitations-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    downloadCsv(`invitations-${format(new Date(), 'yyyy-MM-dd')}.csv`, rows);
   };
 
   // --- Columns ----------------------------------------------------------

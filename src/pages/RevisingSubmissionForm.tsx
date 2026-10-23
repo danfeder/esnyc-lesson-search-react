@@ -4,23 +4,11 @@ import { ChevronLeft, AlertCircle, CheckCircle2, Loader2, FileText } from 'lucid
 import { supabase } from '@/lib/supabase';
 import { parseDbError } from '@/utils/errorHandling';
 import { AuthModal } from '@/components/Auth/AuthModal';
-import {
-  IntButton,
-  IntFormField,
-  IntPageHeader,
-  IntStatusBadge,
-  type IntStatus,
-} from '@/components/Internal';
+import { IntButton, IntFormField, IntPageHeader, IntStatusBadge } from '@/components/Internal';
 import { LessonSearchPicker, type LessonSearchResult } from '@/components/LessonSearchPicker';
 import { User } from '@supabase/supabase-js';
 import { logger } from '@/utils/logger';
-
-const SUBMISSION_STATUS_TO_BADGE: Record<string, IntStatus> = {
-  submitted: 'submitted',
-  in_review: 'review',
-  needs_revision: 'revision',
-  approved: 'approved',
-};
+import { badgeForStatus } from '@/utils/submissionStatus';
 
 export function RevisingSubmissionForm() {
   const navigate = useNavigate();
@@ -114,9 +102,7 @@ export function RevisingSubmissionForm() {
             <FileText size={16} className="inline mr-1" />
             <strong>{submissionResult.extractedTitle}</strong>
           </div>
-          <IntStatusBadge
-            status={SUBMISSION_STATUS_TO_BADGE[submissionResult.status] ?? 'submitted'}
-          />
+          <IntStatusBadge status={badgeForStatus(submissionResult.status)} />
           <p className="mt-4 text-sm text-gray-700">
             {submissionResult.targetTitle ? (
               <>
