@@ -3,7 +3,6 @@
  * Provides consistent logging across development and production
  */
 import { captureException, captureMessage, addBreadcrumb } from '@/lib/sentry';
-import type { SeverityLevel } from '@sentry/types';
 
 const isDevelopment = import.meta.env.DEV;
 const isProduction = import.meta.env.PROD;
@@ -136,7 +135,7 @@ export const logger = {
     if (isProduction) {
       addBreadcrumb({
         message: argsToMessage(sanitized),
-        level: 'debug' as SeverityLevel,
+        level: 'debug',
         category: 'console',
       });
     }

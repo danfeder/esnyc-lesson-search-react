@@ -100,7 +100,7 @@ export interface UserInvitation {
 }
 
 // Audit log value types
-export interface AuditValues {
+interface AuditValues {
   role?: UserRole;
   is_active?: boolean;
   full_name?: string;
@@ -112,7 +112,7 @@ export interface AuditValues {
   schools?: Array<{ id: string; name: string }>;
 }
 
-export interface AuditMetadata {
+interface AuditMetadata {
   reason?: string;
   bulk_action?: boolean;
   affected_count?: number;
@@ -182,8 +182,5 @@ export interface UserFilters {
   search?: string;
   role?: UserRole | 'all';
   is_active?: 'active' | 'inactive' | 'all';
-  school_borough?: string | 'all';
   schoolId?: string | 'all';
-  sort_by?: 'name' | 'email' | 'role' | 'created_at' | 'last_active';
-  sort_order?: 'asc' | 'desc';
 }

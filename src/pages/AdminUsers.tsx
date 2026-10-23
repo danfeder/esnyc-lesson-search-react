@@ -20,6 +20,7 @@ import {
 import { EnhancedUserProfile, UserFilters, UserRole, Permission } from '@/types/auth';
 import { SchoolBadge } from '@/components/Schools';
 import { logger } from '@/utils/logger';
+import { downloadCsv } from '@/utils/csvExport';
 import {
   IntButton,
   IntDataTable,
@@ -57,10 +58,7 @@ export function AdminUsers() {
     search: '',
     role: 'all',
     is_active: 'all',
-    school_borough: 'all',
     schoolId: 'all',
-    sort_by: 'created_at',
-    sort_order: 'desc',
   });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -113,15 +111,7 @@ export function AdminUsers() {
         query = query.eq('is_active', filters.is_active === 'active');
       }
 
-      if (filters.school_borough !== 'all') {
-        query = query.eq('school_borough', filters.school_borough as string);
-      }
-
-      if (filters.sort_by !== 'email') {
-        query = query.order(filters.sort_by || 'created_at', {
-          ascending: filters.sort_order === 'asc',
-        });
-      }
+      query = query.order('created_at', { ascending: false });
 
       const from = (page - 1) * USERS_PER_PAGE;
       const to = from + USERS_PER_PAGE - 1;
@@ -199,13 +189,6 @@ export function AdminUsers() {
             reviewCount: counts.reviews,
           };
         });
-
-        if (filters.sort_by === 'email') {
-          merged.sort((a, b) => {
-            const comparison = a.email.localeCompare(b.email);
-            return filters.sort_order === 'asc' ? comparison : -comparison;
-          });
-        }
 
         setUsers(
           merged.map(
@@ -387,7 +370,7 @@ export function AdminUsers() {
         email: emailMap.get(profile.id) || 'No email',
       }));
 
-      const csv = [
+      const rows: string[][] = [
         ['Email', 'Name', 'Role', 'School', 'Borough', 'Status', 'Joined', 'Invited By'],
         ...(data || []).map((user) => [
           user.email || '',
@@ -399,17 +382,9 @@ export function AdminUsers() {
           user.created_at ? new Date(user.created_at).toLocaleDateString() : '',
           user.invited_by || 'Self-registered',
         ]),
-      ]
-        .map((row) => row.map((cell) => `"${cell}"`).join(','))
-        .join('\n');
+      ];
 
-      const blob = new window.Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `users-export-${new Date().toISOString().split('T')[0]}.csv`;
-      a.click();
-      window.URL.revokeObjectURL(url);
+      downloadCsv(`users-export-${new Date().toISOString().split('T')[0]}.csv`, rows);
     } catch (error) {
       // FP-20b: a failed export used to be a silent no-op — surface a toast so
       // the admin knows the click didn't produce a file.

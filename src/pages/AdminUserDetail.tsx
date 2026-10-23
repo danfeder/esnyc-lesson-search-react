@@ -20,7 +20,6 @@ import {
   Clock,
   FileText,
   GitMerge,
-  KeyRound,
   Pencil,
   User,
   UserX,
@@ -35,8 +34,8 @@ import {
   IntRoleBadge,
   IntStatusBadge,
   type IntRole,
-  type IntStatus,
 } from '@/components/Internal';
+import { badgeForStatus } from '@/utils/submissionStatus';
 
 type Tab = 'activity' | 'access' | 'profile';
 
@@ -70,21 +69,6 @@ function avatarTone(role: string): string {
   if (role === 'admin' || role === 'super_admin') return 'adm-avatar--ink';
   if (role === 'reviewer') return 'adm-avatar--green';
   return '';
-}
-
-function statusToBadge(status: string): IntStatus {
-  switch (status) {
-    case 'submitted':
-      return 'submitted';
-    case 'in_review':
-      return 'review';
-    case 'needs_revision':
-      return 'revision';
-    case 'approved':
-      return 'approved';
-    default:
-      return 'submitted';
-  }
 }
 
 export function AdminUserDetail() {
@@ -710,7 +694,7 @@ export function AdminUserDetail() {
                       <li key={s.id}>
                         <div className="adm-recent-title">{s.title || 'Untitled submission'}</div>
                         <div className="adm-recent-meta">
-                          <IntStatusBadge status={statusToBadge(s.status)} />
+                          <IntStatusBadge status={badgeForStatus(s.status)} />
                           <span>
                             {s.created_at
                               ? formatDistanceToNow(new Date(s.created_at), { addSuffix: true })
@@ -894,19 +878,6 @@ export function AdminUserDetail() {
                   </h3>
                   <p>Account-level actions. All are logged in the audit trail.</p>
                   <div className="adm-danger-zone-actions">
-                    <div className="adm-danger-zone-row">
-                      <div>
-                        <div className="adm-danger-zone-row-title">Send password reset</div>
-                        <div>
-                          Admin-initiated password reset needs a service-role endpoint. Ask the user
-                          to click <em>Forgot password</em> from the sign-in screen for now.
-                        </div>
-                      </div>
-                      <IntButton disabled title="Not yet wired — needs a service-role endpoint">
-                        <KeyRound className="w-4 h-4" aria-hidden="true" />
-                        <span>Send link</span>
-                      </IntButton>
-                    </div>
                     <div className="adm-danger-zone-row">
                       <div>
                         <div className="adm-danger-zone-row-title">

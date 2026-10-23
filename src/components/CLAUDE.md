@@ -32,7 +32,7 @@ import { Search, Filter } from 'lucide-react';
 - Named exports only (no default exports)
 - Props interface ends with `Props`
 - Place in feature folder: `components/FeatureName/ComponentName.tsx`
-- Export from barrel file: `components/FeatureName/index.ts`
+- Import components by direct path (`@/components/FeatureName/ComponentName`). The only barrels are `components/Internal/index.ts` (the design system's public surface) and `components/Schools/index.ts`; do not add new ones.
 - Use `cn()` for conditional Tailwind classes
 
 ## Common Patterns

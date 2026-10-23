@@ -31,8 +31,8 @@ import {
   IntRoleBadge,
   IntStatusBadge,
   type IntRole,
-  type IntStatus,
 } from '@/components/Internal';
+import { STATUS_TO_BADGE, type SubmissionStatus } from '@/utils/submissionStatus';
 
 const BOROUGHS = ['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'];
 
@@ -40,8 +40,6 @@ interface ProfileFormData {
   full_name: string;
   school_borough: string;
 }
-
-type SubmissionStatus = 'submitted' | 'in_review' | 'needs_revision' | 'approved' | 'rejected';
 
 interface LessonSubmission {
   id: string;
@@ -56,14 +54,6 @@ interface LessonSubmission {
   review_completed_at?: string;
   original_lesson_id?: string;
 }
-
-const STATUS_BADGE: Record<SubmissionStatus, IntStatus> = {
-  submitted: 'submitted',
-  in_review: 'review',
-  needs_revision: 'revision',
-  approved: 'approved',
-  rejected: 'rejected',
-};
 
 export function UserProfile() {
   const navigate = useNavigate();
@@ -584,7 +574,7 @@ export function UserProfile() {
               {submissions.map((submission) => (
                 <article key={submission.id} className="adm-submission-row">
                   <div className="adm-submission-row-head">
-                    <IntStatusBadge status={STATUS_BADGE[submission.status]}>
+                    <IntStatusBadge status={STATUS_TO_BADGE[submission.status]}>
                       {submission.status === 'rejected' ? 'Not published' : undefined}
                     </IntStatusBadge>
                     <span className="adm-submission-row-type">
