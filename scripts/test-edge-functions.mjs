@@ -2,7 +2,7 @@
 
 /**
  * Daily smoke test for 7 PROD edge functions (not the whole deployed set:
- * complete-review and the legacy check-google-doc-access aren't smoked).
+ * complete-review and sync-drive-metadata aren't smoked).
  *
  * Two tiers:
  *   1. Full smoke (1 fn) — POST a real payload and assert response shape.
