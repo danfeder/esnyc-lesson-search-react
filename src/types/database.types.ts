@@ -1797,15 +1797,6 @@ export type Database = {
         };
         Returns: string;
       };
-      debug_user_email: {
-        Args: { user_id: string };
-        Returns: {
-          details: Json;
-          email: string;
-          id: string;
-          source: string;
-        }[];
-      };
       expand_cultural_heritage: {
         Args: { cultures: string[] };
         Returns: string[];
@@ -1932,13 +1923,6 @@ export type Database = {
       is_duplicate_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
       is_lesson_archived: { Args: { p_lesson_id: string }; Returns: boolean };
       is_reviewer_or_above: { Args: never; Returns: boolean };
-      publish_approved_submissions: {
-        Args: { p_limit?: number };
-        Returns: {
-          published_lesson_id: string;
-          published_submission_id: string;
-        }[];
-      };
       search_lessons: {
         Args: {
           filter_academic?: string[];

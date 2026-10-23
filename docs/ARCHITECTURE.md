@@ -1021,30 +1021,9 @@ CREATE FUNCTION get_user_activity_metrics(
 -- Used by: AdminAnalytics page
 ```
 
-**debug_user_email** - Email lookup helper
-
-```sql
-CREATE FUNCTION debug_user_email(user_id UUID)
-RETURNS TABLE (source TEXT, id UUID, email TEXT, details JSONB)
--- Checks: auth.users AND user_profiles for email
--- Admin only (SECURITY DEFINER)
--- Used for: Debugging email sync issues
-```
-
 ---
 
 ### 6.4 Submission Workflow Functions
-
-**publish_approved_submissions** - Batch publish
-
-```sql
-CREATE FUNCTION publish_approved_submissions(p_limit INT DEFAULT NULL)
-RETURNS JSONB
--- Finds: submissions with decision='approve_new' or 'approve_update'
--- Creates: New lessons or updates existing
--- Archives: Old versions if update
--- Returns: { published_count, errors[] }
-```
 
 **validate_invitation_token** - Token verification
 

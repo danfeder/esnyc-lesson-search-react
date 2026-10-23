@@ -1,13 +1,68 @@
--- Publish approved submissions → lessons (title-first using submissions.extracted_title)
--- Drops and recreates to prioritize extracted_title, then metadata title, then content-derived title.
+-- =====================================================
+-- ROLLBACK: 20261023194448_drop_unused_rpc_functions.sql.rollback
+-- =====================================================
+-- Restores the two functions dropped by 20261023194448_drop_unused_rpc_functions.sql.
+-- Use ONLY if a caller resurfaces. Idempotent; safe to re-run.
+--
+-- Bodies are copied verbatim from the 20251001 baseline (the live PROD/TEST
+-- definitions had the same pg_get_functiondef md5 as the baseline on
+-- 2026-10-21, so the baseline text IS the pre-drop state).
+--
+-- DEVIATION FROM "exactly as it existed" (deliberate): the original grants
+-- are NOT reproduced. This script applies least-privilege grants
+-- (EXECUTE to service_role only). Widen deliberately if a specific
+-- caller needs it.
+--
+-- NOTE: publish_approved_submissions inserts into lessons.lesson_format,
+-- which 20260512000000_drop_lesson_format.sql removed. The restored
+-- function will CREATE fine (plpgsql bodies are not validated at CREATE)
+-- but will fail at execution until that column reference is removed.
 
-DROP FUNCTION IF EXISTS public.publish_approved_submissions(integer);
+CREATE OR REPLACE FUNCTION "public"."debug_user_email"("user_id" "uuid") RETURNS TABLE("source" "text", "id" "uuid", "email" "text", "details" "jsonb")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  -- Check auth.users
+  RETURN QUERY
+  SELECT 
+    'auth.users'::text as source,
+    u.id,
+    u.email::text,
+    jsonb_build_object(
+      'created_at', u.created_at,
+      'email_confirmed_at', u.email_confirmed_at,
+      'raw_user_meta_data', u.raw_user_meta_data
+    ) as details
+  FROM auth.users u
+  WHERE u.id = user_id;
 
-CREATE OR REPLACE FUNCTION public.publish_approved_submissions(p_limit integer DEFAULT NULL)
-RETURNS TABLE(published_lesson_id text, published_submission_id uuid)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
+  -- Check user_profiles
+  RETURN QUERY
+  SELECT 
+    'user_profiles'::text as source,
+    p.id,
+    p.email::text,
+    jsonb_build_object(
+      'full_name', p.full_name,
+      'role', p.role,
+      'created_at', p.created_at,
+      'updated_at', p.updated_at
+    ) as details
+  FROM user_profiles p
+  WHERE p.id = user_id;
+END;
+$$;
+
+COMMENT ON FUNCTION "public"."debug_user_email"("user_id" "uuid") IS 'Debug function to check user email presence in both tables';
+
+REVOKE ALL ON FUNCTION public.debug_user_email(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.debug_user_email(uuid) TO service_role;
+
+
+CREATE OR REPLACE FUNCTION "public"."publish_approved_submissions"("p_limit" integer DEFAULT NULL::integer) RETURNS TABLE("published_lesson_id" "text", "published_submission_id" "uuid")
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
 BEGIN
   RETURN QUERY
   WITH candidates AS (
@@ -210,5 +265,5 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.publish_approved_submissions(integer) TO anon, authenticated;
-
+REVOKE ALL ON FUNCTION public.publish_approved_submissions(integer) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.publish_approved_submissions(integer) TO service_role;
