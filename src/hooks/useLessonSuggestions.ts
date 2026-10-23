@@ -65,13 +65,6 @@ export function useLessonSuggestions({ filters, enabled = true }: UseLessonSugge
             socialEmotionalLearning: filters.socialEmotionalLearning,
             cookingMethods: filters.cookingMethods,
           },
-          // We only need suggestions/expandedQuery, never the rows — but
-          // smart-search coerces `limit: 0` up to 20 (rung8-hooks F1), so ask
-          // for the smallest honest page instead. Semantics are identical: the
-          // server only populates `suggestions` when its own search returns 0
-          // rows, so 1 vs 20 rows never changes what we read — it just stops
-          // serializing 19 discarded rows on the hottest interactive path.
-          limit: 1,
         },
       });
 

@@ -3,7 +3,7 @@ import { FILTER_CONFIGS, SEARCH_LOCATION_OPTIONS } from '@/utils/filterDefinitio
 
 /**
  * Pure (no-React) serialize / parse / validate for the public search URL
- * schema: query + 10 filters + sort. Written fresh against the current
+ * schema: query + 11 filters + sort. Written fresh against the current
  * `SearchFilters` shape per design §4 Q6/Q7
  * (2026-06-20-theme-b-public-ux-design.md). The vestigial "Lesson Type" (tags)
  * facet was retired in W1c, so it is intentionally NOT part of the URL schema.
