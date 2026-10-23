@@ -49,7 +49,7 @@ supabase db diff --linked --schema public > production-diff.sql
 - `canonical_lessons` - Duplicate resolution tracking
 - `lesson_archive` - Deleted lesson audit trail (127 archived lessons)
 - `cultural_heritage_hierarchy` - Parent-child culture relationships (6 entries)
-- `search_synonyms` - Search expansion (60 synonym mappings)
+- `search_synonyms` - Search expansion (74 synonym mappings)
 - `lesson_collections` - User-created collections
 - `lesson_versions` - Version history
 - `submission_similarities` - Duplicate detection scores
@@ -296,7 +296,7 @@ supabase db push --linked
 
 ### Search Configuration Tables
 
-**search_synonyms** (60 rows):
+**search_synonyms** (74 rows; UNIQUE on (term, synonym_type, synonyms) since 20261023203832 — new seeds use ON CONFLICT (term, synonym_type, synonyms) DO NOTHING):
 ```
 term          | synonyms[]
 --------------|-----------

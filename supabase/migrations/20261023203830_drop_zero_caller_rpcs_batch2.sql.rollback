@@ -1,0 +1,312 @@
+-- =====================================================
+-- ROLLBACK: 20261023203830_drop_zero_caller_rpcs_batch2.sql.rollback
+-- =====================================================
+-- Restores the nine functions exactly as they existed on PROD before
+-- 20261023203830_drop_zero_caller_rpcs_batch2.sql dropped them (bodies captured with
+-- pg_get_functiondef on 2026-10-21). Use ONLY if a caller resurfaces. Idempotent; safe
+-- to re-run.
+-- Creation requires only has_duplicate_review_permission() and is_admin(uuid) (plpgsql
+-- bodies are not resolved against tables at CREATE time), so this script applies cleanly.
+-- Note that three of the restored functions were already non-functional before the drop
+-- and stay so after a restore: get_user_profiles_with_email() selects user_profiles
+-- columns that no longer exist (school_id, invitation_accepted_at, last_login_at,
+-- login_count); get_user_activity_metrics() reads a lesson_reviews table that does not
+-- exist; track_user_login() inserts action = 'login', which the live CHECK constraint
+-- user_management_audit_action_check rejects. They are restored verbatim for fidelity.
+--
+-- Not applied by CI: both workflows glob supabase/migrations/**/*.sql and the .rollback
+-- suffix does not match (same convention as the other .rollback files here).
+
+-- (a) user-management trio ------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.get_user_profiles_with_email()
+ RETURNS TABLE(id uuid, user_id uuid, created_at timestamp with time zone, updated_at timestamp with time zone, email text, full_name text, role text, school_id uuid, school_name text, grades_taught text[], subjects text[], is_active boolean, invited_by uuid, invitation_accepted_at timestamp with time zone, last_login_at timestamp with time zone, login_count integer, auth_email text, auth_created_at timestamp with time zone, last_sign_in_at timestamp with time zone)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+BEGIN
+  -- Only admins can access this function
+  IF NOT is_admin(auth.uid()) THEN
+    RAISE EXCEPTION 'Access denied. Admin role required.';
+  END IF;
+
+  RETURN QUERY
+  SELECT 
+    up.id,
+    up.user_id,
+    up.created_at,
+    up.updated_at,
+    up.email,
+    up.full_name,
+    up.role,
+    up.school_id,
+    up.school_name,
+    up.grades_taught,
+    up.subjects,
+    up.is_active,
+    up.invited_by,
+    up.invitation_accepted_at,
+    up.last_login_at,
+    up.login_count,
+    au.email as auth_email,
+    au.created_at as auth_created_at,
+    au.last_sign_in_at
+  FROM user_profiles up
+  LEFT JOIN auth.users au ON up.id = au.id;
+END;
+$function$;
+ALTER FUNCTION public.get_user_profiles_with_email() OWNER TO postgres;
+COMMENT ON FUNCTION public.get_user_profiles_with_email() IS 'Admin-only function to get user profiles with auth email information.';
+GRANT ALL ON FUNCTION public.get_user_profiles_with_email() TO anon;
+GRANT ALL ON FUNCTION public.get_user_profiles_with_email() TO authenticated;
+GRANT ALL ON FUNCTION public.get_user_profiles_with_email() TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_user_activity_metrics(p_user_id uuid, p_days integer DEFAULT 30)
+ RETURNS TABLE(login_count integer, last_login timestamp with time zone, submission_count integer, review_count integer, last_activity timestamp with time zone)
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    -- Login count in the period
+    (SELECT COUNT(*)::INTEGER 
+     FROM user_management_audit 
+     WHERE actor_id = p_user_id 
+     AND action = 'login' 
+     AND created_at >= NOW() - INTERVAL '1 day' * p_days) AS login_count,
+    
+    -- Last login time
+    (SELECT MAX(created_at) 
+     FROM user_management_audit 
+     WHERE actor_id = p_user_id 
+     AND action = 'login') AS last_login,
+    
+    -- Submission count
+    (SELECT COUNT(*)::INTEGER 
+     FROM lesson_submissions 
+     WHERE teacher_id = p_user_id 
+     AND created_at >= NOW() - INTERVAL '1 day' * p_days) AS submission_count,
+    
+    -- Review count
+    (SELECT COUNT(*)::INTEGER 
+     FROM lesson_reviews 
+     WHERE reviewer_id = p_user_id 
+     AND created_at >= NOW() - INTERVAL '1 day' * p_days) AS review_count,
+    
+    -- Last activity (most recent of any action)
+    GREATEST(
+      (SELECT MAX(created_at) FROM user_management_audit WHERE actor_id = p_user_id),
+      (SELECT MAX(created_at) FROM lesson_submissions WHERE teacher_id = p_user_id),
+      (SELECT MAX(created_at) FROM lesson_reviews WHERE reviewer_id = p_user_id)
+    ) AS last_activity;
+END;
+$function$;
+ALTER FUNCTION public.get_user_activity_metrics(uuid, integer) OWNER TO postgres;
+GRANT ALL ON FUNCTION public.get_user_activity_metrics(uuid, integer) TO anon;
+GRANT ALL ON FUNCTION public.get_user_activity_metrics(uuid, integer) TO authenticated;
+GRANT ALL ON FUNCTION public.get_user_activity_metrics(uuid, integer) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.track_user_login(p_user_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  INSERT INTO user_management_audit (
+    actor_id,
+    action,
+    target_user_id,
+    metadata
+  ) VALUES (
+    p_user_id,
+    'login',
+    p_user_id,
+    jsonb_build_object(
+      'login_at', NOW(),
+      'source', 'manual_tracking'
+    )
+  );
+END;
+$function$;
+ALTER FUNCTION public.track_user_login(uuid) OWNER TO postgres;
+GRANT ALL ON FUNCTION public.track_user_login(uuid) TO anon;
+GRANT ALL ON FUNCTION public.track_user_login(uuid) TO authenticated;
+GRANT ALL ON FUNCTION public.track_user_login(uuid) TO service_role;
+
+-- (b) schema-introspection duo --------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.check_security_definer_views()
+ RETURNS TABLE(view_name text, view_owner text, has_security_definer boolean)
+ LANGUAGE sql
+ SECURITY DEFINER
+AS $function$
+  SELECT 
+    schemaname || '.' || viewname as view_name,
+    viewowner as view_owner,
+    false as has_security_definer -- PostgreSQL doesn't easily expose this, would need pg_get_viewdef parsing
+  FROM pg_views
+  WHERE schemaname = 'public';
+$function$;
+ALTER FUNCTION public.check_security_definer_views() OWNER TO postgres;
+GRANT ALL ON FUNCTION public.check_security_definer_views() TO anon;
+GRANT ALL ON FUNCTION public.check_security_definer_views() TO authenticated;
+GRANT ALL ON FUNCTION public.check_security_definer_views() TO service_role;
+
+CREATE OR REPLACE FUNCTION public.verify_rls_enabled()
+ RETURNS TABLE(table_name text, rls_enabled boolean, policy_count integer, status text)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  RETURN QUERY
+  WITH table_policies AS (
+    SELECT 
+      t.schemaname,
+      t.tablename,
+      t.rowsecurity,
+      COUNT(pol.polname) as pol_count
+    FROM pg_tables t
+    LEFT JOIN pg_policies pol ON pol.schemaname = t.schemaname AND pol.tablename = t.tablename
+    WHERE t.schemaname = 'public'
+      AND t.tablename NOT IN ('schema_migrations', 'spatial_ref_sys')
+    GROUP BY t.schemaname, t.tablename, t.rowsecurity
+  )
+  SELECT 
+    schemaname || '.' || tablename,
+    rowsecurity,
+    pol_count::INTEGER,
+    CASE 
+      WHEN NOT rowsecurity THEN 'ERROR: RLS DISABLED'
+      WHEN pol_count = 0 THEN 'WARNING: No policies'
+      ELSE 'OK'
+    END as status
+  FROM table_policies
+  ORDER BY 
+    CASE 
+      WHEN NOT rowsecurity THEN 1
+      WHEN pol_count = 0 THEN 2
+      ELSE 3
+    END,
+    tablename;
+END;
+$function$;
+ALTER FUNCTION public.verify_rls_enabled() OWNER TO postgres;
+GRANT ALL ON FUNCTION public.verify_rls_enabled() TO anon;
+GRANT ALL ON FUNCTION public.verify_rls_enabled() TO authenticated;
+GRANT ALL ON FUNCTION public.verify_rls_enabled() TO service_role;
+
+-- (c) retired-dedup quartet -----------------------------------------------------
+
+CREATE OR REPLACE FUNCTION public.is_duplicate_lesson(p_lesson_id text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM canonical_lessons 
+    WHERE duplicate_id = p_lesson_id
+  );
+END;
+$function$;
+ALTER FUNCTION public.is_duplicate_lesson(text) OWNER TO postgres;
+GRANT ALL ON FUNCTION public.is_duplicate_lesson(text) TO anon;
+GRANT ALL ON FUNCTION public.is_duplicate_lesson(text) TO authenticated;
+GRANT ALL ON FUNCTION public.is_duplicate_lesson(text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.is_lesson_archived(p_lesson_id text)
+ RETURNS boolean
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM lesson_archive 
+    WHERE lesson_id = p_lesson_id
+  );
+END;
+$function$;
+ALTER FUNCTION public.is_lesson_archived(text) OWNER TO postgres;
+GRANT ALL ON FUNCTION public.is_lesson_archived(text) TO anon;
+GRANT ALL ON FUNCTION public.is_lesson_archived(text) TO authenticated;
+GRANT ALL ON FUNCTION public.is_lesson_archived(text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.get_canonical_lesson_id(p_lesson_id text)
+ RETURNS text
+ LANGUAGE plpgsql
+ STABLE
+AS $function$
+DECLARE
+  v_canonical_id TEXT;
+BEGIN
+  -- Check if this lesson is marked as a duplicate
+  SELECT canonical_id INTO v_canonical_id
+  FROM canonical_lessons
+  WHERE duplicate_id = p_lesson_id;
+  
+  -- If found, return the canonical ID
+  IF v_canonical_id IS NOT NULL THEN
+    RETURN v_canonical_id;
+  END IF;
+  
+  -- Otherwise, the lesson itself is canonical
+  RETURN p_lesson_id;
+END;
+$function$;
+ALTER FUNCTION public.get_canonical_lesson_id(text) OWNER TO postgres;
+GRANT ALL ON FUNCTION public.get_canonical_lesson_id(text) TO anon;
+GRANT ALL ON FUNCTION public.get_canonical_lesson_id(text) TO authenticated;
+GRANT ALL ON FUNCTION public.get_canonical_lesson_id(text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.check_group_already_resolved(p_lesson_ids text[])
+ RETURNS TABLE(is_resolved boolean, resolution_type text, resolved_at timestamp with time zone)
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+AS $function$
+BEGIN
+  -- Permission check
+  IF NOT has_duplicate_review_permission() THEN
+    RAISE EXCEPTION 'Permission denied: requires admin, reviewer, or super_admin role';
+  END IF;
+
+  -- Check duplicate_resolutions first
+  IF EXISTS (
+    SELECT 1 FROM duplicate_resolutions dr
+    WHERE dr.canonical_lesson_id = ANY(p_lesson_ids)
+  ) THEN
+    RETURN QUERY
+    SELECT
+      true as is_resolved,
+      'archived'::TEXT as resolution_type,
+      MAX(dr.created_at) as resolved_at
+    FROM duplicate_resolutions dr
+    WHERE dr.canonical_lesson_id = ANY(p_lesson_ids);
+    RETURN;
+  END IF;
+
+  -- Check duplicate_group_dismissals
+  IF EXISTS (
+    SELECT 1 FROM duplicate_group_dismissals dgd
+    WHERE dgd.lesson_ids @> p_lesson_ids
+    AND dgd.lesson_ids <@ p_lesson_ids
+  ) THEN
+    RETURN QUERY
+    SELECT
+      true as is_resolved,
+      'dismissed'::TEXT as resolution_type,
+      MAX(dgd.dismissed_at) as resolved_at
+    FROM duplicate_group_dismissals dgd
+    WHERE dgd.lesson_ids @> p_lesson_ids
+    AND dgd.lesson_ids <@ p_lesson_ids;
+    RETURN;
+  END IF;
+
+  -- Not resolved
+  RETURN QUERY SELECT false, NULL::TEXT, NULL::TIMESTAMPTZ;
+END;
+$function$;
+ALTER FUNCTION public.check_group_already_resolved(text[]) OWNER TO postgres;
+COMMENT ON FUNCTION public.check_group_already_resolved(text[]) IS 'Check if a group of lessons has already been resolved or dismissed';
+GRANT EXECUTE ON FUNCTION public.check_group_already_resolved(text[]) TO authenticated;
