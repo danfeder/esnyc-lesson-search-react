@@ -13,7 +13,7 @@ permissions:
 jobs:
   e2e:
     name: E2E Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # 25 (was 15): in 2026-07 the then-77-test suite took 11.5–15+ min end-to-end (64 tests / ~3 min by 2026-10) depending on
     # runner speed — three 15-min timeout kills on 2026-07-04 alone (PRs #605/#606),
     # and a mid-suite kill strands published fixtures on the TEST DB that poison
