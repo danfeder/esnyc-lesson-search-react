@@ -27,7 +27,7 @@ describe('useLessonSuggestions', () => {
     vi.clearAllMocks();
   });
 
-  it('requests limit:1, never 0 (rung8-hooks F1 — smart-search coerces 0→20)', async () => {
+  it('invokes smart-search with query + filters only (count-only contract; no page-size param)', async () => {
     invokeMock.mockResolvedValue({ data: { suggestions: [], expandedQuery: 'x:*' }, error: null });
 
     renderHook(() => useLessonSuggestions({ filters: { ...initialFilters, query: 'x' } }), {
@@ -36,7 +36,7 @@ describe('useLessonSuggestions', () => {
 
     await waitFor(() => expect(invokeMock).toHaveBeenCalled());
     expect(invokeMock.mock.calls[0][0]).toBe('smart-search');
-    expect(invokeMock.mock.calls[0][1].body.limit).toBe(1);
+    expect(invokeMock.mock.calls[0][1].body.limit).toBeUndefined();
   });
 
   it("sends the CLEANED query (filler stripped), so the hint can't leak reverse-index synonyms of filler words (FP-19)", async () => {

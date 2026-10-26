@@ -350,7 +350,7 @@ WHERE table_name = 'lessons'
 ## Related Documentation
 
 **Schema References**:
-- Schema dumps from the 2025-10 snapshot were removed in 2026-10; the baseline migration file above is the schema reference. Recover the dumps with `git show <sha>^:docs/production-schema-full.sql` (sha = the merge commit of the 2026-10 docs-archival PR).
+- Schema dumps from the 2025-10 snapshot were removed in 2026-10; the baseline migration file above is the schema reference. Recover the dumps with `git show 5c491f0^:docs/production-schema-full.sql` (the 2026-10 docs-archival PR, #649).
 
 **Architecture**:
 - `docs/architecture-decisions.md` - Why we made key decisions
