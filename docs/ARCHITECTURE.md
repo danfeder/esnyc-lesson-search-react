@@ -2252,8 +2252,8 @@ serve(async (req) => {
 ### B. Technology Stack
 
 **Frontend**:
-- React 19.0 + TypeScript 5.x
-- Build: Vite 5.x (fast dev server, optimized builds)
+- React 19.0 + TypeScript 6.x
+- Build: Vite 8.x (fast dev server, optimized builds)
 - Styling: Tailwind CSS 3.x + Headless UI (accessible components)
 - Routing: React Router 6.x (client-side routing)
 - State: Zustand 4.x (lightweight, no boilerplate)
