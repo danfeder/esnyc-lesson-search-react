@@ -1,0 +1,719 @@
+{
+  "_about": "PROD census of lessons column ⇄ metadata-mirror drift, 2026-10-22, project jxlxtzkmicfhchkhiojz (852 lessons). Re-derived in the cloud execution session from the planning brief's row tables (the planner's raw census-rows.json was not available there); only the 59 in-scope pairs are listed. Out-of-scope cohorts counted but not listed: gradeLevels 167 rows (no such key is ever written by complete_review_atomic — a design question, not drift), tags 6 rows (retired facet, inert column). Every in-scope mirror was literally [] and no row anywhere had the inverse shape (column empty, mirror non-empty). Column is the source of truth. Re-run with scripts/mirror-drift/mirror-census.sql.",
+  "census_sql": "scripts/mirror-drift/mirror-census.sql",
+  "database": "PROD jxlxtzkmicfhchkhiojz",
+  "censused_at": "2026-10-22",
+  "lessons_total": 852,
+  "summary": {
+    "observances_holidays": 7,
+    "main_ingredients": 1,
+    "cooking_skills": 6,
+    "garden_skills": 1,
+    "cultural_responsiveness_features": 44,
+    "pairs": 59,
+    "distinct_lessons": 45,
+    "retired_among_them": 0,
+    "mirror_not_an_array": 0
+  },
+  "rows": [
+    {
+      "lesson_id": "1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ",
+      "title": "Who Lives in the Garden?",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Beginning of year"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:17:11.11071+00"
+    },
+    {
+      "lesson_id": "1os1DorEA3uoqoMBp4d7d7dop8L5uN6iT",
+      "title": "Descriptive word hunt",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Beginning of year"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:38:00.12383+00"
+    },
+    {
+      "lesson_id": "lesson_cc0a5cb454f04aa0aaa5a30a33dac44b",
+      "title": "How humans work in the garden",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Beginning of year"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:46:14.105142+00"
+    },
+    {
+      "lesson_id": "lesson_769f32694684408fbacbe1b02fc9d8a0",
+      "title": "Three Sisters puppet show",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Indigenous Peoples' Month"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 15:20:37.051717+00"
+    },
+    {
+      "lesson_id": "lesson_366d2fba34d34509811093f5adfb744b",
+      "title": "Garden_ Intro/Bingo",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Beginning of year"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-20 17:03:19.911671+00"
+    },
+    {
+      "lesson_id": "1CAKF0L0SYp5fgaXqZrrb4G-K3LzOu56phWV9JFg67U8",
+      "title": "Plants and Music",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Indigenous Peoples' Month"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-21 12:38:21.551264+00"
+    },
+    {
+      "lesson_id": "lesson_6fe7881164eb44148eabb42d0e14bfec",
+      "title": "Recycle Gardening",
+      "column": "observances_holidays",
+      "key": "observancesHolidays",
+      "column_value": [
+        "Earth Month"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-25 19:07:04.854033+00"
+    },
+    {
+      "lesson_id": "1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg",
+      "title": "Potato Exploration",
+      "column": "main_ingredients",
+      "key": "mainIngredients",
+      "column_value": [
+        "Potatoes",
+        "Root vegetables"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 14:20:31.129561+00"
+    },
+    {
+      "lesson_id": "lesson_cc0a5cb454f04aa0aaa5a30a33dac44b",
+      "title": "How humans work in the garden",
+      "column": "cooking_skills",
+      "key": "cookingSkills",
+      "column_value": [
+        "Mixing & stirring",
+        "Blending & juicing",
+        "Plating & garnishing"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:46:14.105142+00"
+    },
+    {
+      "lesson_id": "1exshEQcKwxp6NmN2FbKX010ds55NMaohartd8NV4cEc",
+      "title": "Booker T.  Whatley's CSA",
+      "column": "cooking_skills",
+      "key": "cookingSkills",
+      "column_value": [
+        "Assembling dishes"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 14:51:19.027721+00"
+    },
+    {
+      "lesson_id": "lesson_011467fd86fa4339a745803f8643fe84",
+      "title": "All About Pumpkins 3K/PK",
+      "column": "cooking_skills",
+      "key": "cookingSkills",
+      "column_value": [
+        "Mixing & stirring",
+        "Roasting",
+        "Seasoning & spice blending"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-16 18:04:24.213513+00"
+    },
+    {
+      "lesson_id": "1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg",
+      "title": "Potato Exploration",
+      "column": "cooking_skills",
+      "key": "cookingSkills",
+      "column_value": [
+        "Roasting"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 14:20:31.129561+00"
+    },
+    {
+      "lesson_id": "1Ps9Uvd1cYmq76REd7ogC0NOgVzNnpW4RcLppUaY0CJE",
+      "title": "Pollinators, Our Garden, and Us",
+      "column": "cooking_skills",
+      "key": "cookingSkills",
+      "column_value": [
+        "Measuring",
+        "Mixing & stirring"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 20:23:16.13105+00"
+    },
+    {
+      "lesson_id": "1_lh2N1aBJIlnSq1fdlC3qc3_bYTxrCAOu_YRdaZMW5Y",
+      "title": "New Years Food Traditions 2027",
+      "column": "cooking_skills",
+      "key": "cookingSkills",
+      "column_value": [
+        "Tasting",
+        "Reading & following recipes"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-10 18:59:14.110696+00"
+    },
+    {
+      "lesson_id": "1MTqszq20L6jM1i-f19D2PzfrfTunNRmkP-GAl-ZYO9A",
+      "title": "What does a gardener wear? 3K/PK",
+      "column": "garden_skills",
+      "key": "gardenSkills",
+      "column_value": [
+        "Tool use and maintenance",
+        "Sensory exploration"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-16 18:00:32.508578+00"
+    },
+    {
+      "lesson_id": "1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ",
+      "title": "Who Lives in the Garden?",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum",
+        "Incorporates different individual and cultural learning styles"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:17:11.11071+00"
+    },
+    {
+      "lesson_id": "1os1DorEA3uoqoMBp4d7d7dop8L5uN6iT",
+      "title": "Descriptive word hunt",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:38:00.12383+00"
+    },
+    {
+      "lesson_id": "lesson_cc0a5cb454f04aa0aaa5a30a33dac44b",
+      "title": "How humans work in the garden",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction",
+        "Positions teacher as facilitator"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 13:46:14.105142+00"
+    },
+    {
+      "lesson_id": "1ZAAaZJTBtqnmTbuf-5LujtpCm9ebqSl9aIGw48PZaCg",
+      "title": "What does a gardener do? 3K/PK",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 14:23:56.581464+00"
+    },
+    {
+      "lesson_id": "1KPiyGcL_qXu_GkJc8VE_Qlh-y7dnvhlrd7YhJd5g2wM",
+      "title": "Measurement Hunt",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum",
+        "Positions teacher as facilitator"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 14:46:26.484838+00"
+    },
+    {
+      "lesson_id": "1exshEQcKwxp6NmN2FbKX010ds55NMaohartd8NV4cEc",
+      "title": "Booker T.  Whatley's CSA",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture",
+        "Reshapes curriculum",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 14:51:19.027721+00"
+    },
+    {
+      "lesson_id": "lesson_3c55d72d1d5f4f53babc2fae33929383",
+      "title": "All About Squirrels (and Bulbs!) 3K/PK",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 15:02:29.248097+00"
+    },
+    {
+      "lesson_id": "1A34UK78EbtdHIVeiVe0lNiLJaJ557y-JlS_o673-hmw",
+      "title": "The Garden in the Fall 3K/PK",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum",
+        "Positions teacher as facilitator",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 15:11:03.111482+00"
+    },
+    {
+      "lesson_id": "lesson_769f32694684408fbacbe1b02fc9d8a0",
+      "title": "Three Sisters puppet show",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction",
+        "Communicates high expectations",
+        "Reshapes curriculum",
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 15:20:37.051717+00"
+    },
+    {
+      "lesson_id": "lesson_432a153ed122455da80567b41996b8dc",
+      "title": "Imperfect Foods 25-26",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 15:24:24.402928+00"
+    },
+    {
+      "lesson_id": "lesson_341634b793bd4fb69528013dbcd5d259",
+      "title": "Corn Mush and Wojapi Berry Sauce 2027",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations",
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-14 15:40:52.981519+00"
+    },
+    {
+      "lesson_id": "lesson_011467fd86fa4339a745803f8643fe84",
+      "title": "All About Pumpkins 3K/PK",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-16 18:04:24.213513+00"
+    },
+    {
+      "lesson_id": "1eMFj5YDDAcR6yfLsPC-rhPf1se_Dr17OK-zxTBdZzcM",
+      "title": "The Three Sisters",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations",
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-20 16:08:58.764323+00"
+    },
+    {
+      "lesson_id": "lesson_366d2fba34d34509811093f5adfb744b",
+      "title": "Garden_ Intro/Bingo",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-20 17:03:19.911671+00"
+    },
+    {
+      "lesson_id": "1CAKF0L0SYp5fgaXqZrrb4G-K3LzOu56phWV9JFg67U8",
+      "title": "Plants and Music",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-21 12:38:21.551264+00"
+    },
+    {
+      "lesson_id": "17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c",
+      "title": "Worm breakfast recipe lesson",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-21 13:01:41.119477+00"
+    },
+    {
+      "lesson_id": "1YeuuUtmBUDf4OXVVfrSgSGOe_iaTEAz4",
+      "title": "Garden Jobs Lesson Plan",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction",
+        "Incorporates different individual and cultural learning styles",
+        "Positions teacher as facilitator"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-27 15:53:54.725834+00"
+    },
+    {
+      "lesson_id": "lesson_5a9dc306522d41b0b290259210b2fef9",
+      "title": "Jam and Jelly: Fruit Preservation",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes positive perspectives on parents and families",
+        "Communicates high expectations",
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-27 15:59:19.403152+00"
+    },
+    {
+      "lesson_id": "lesson_f8c1e48f16784cbab04db0a109a9d1c6",
+      "title": "Rainsticks lesson 3K/PK",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-27 16:07:21.611746+00"
+    },
+    {
+      "lesson_id": "lesson_d73c3abe21f04406b664d7a9d899859c",
+      "title": "2nd Grade Decomposition Experiment Part 1",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Positions teacher as facilitator",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-27 16:10:23.292638+00"
+    },
+    {
+      "lesson_id": "1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc",
+      "title": "Roly Poly Lunch 3K/PK",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Incorporates different individual and cultural learning styles"
+      ],
+      "mirror": [],
+      "updated_at": "2026-07-27 19:20:25.703869+00"
+    },
+    {
+      "lesson_id": "19jKdVhI31juzrkZg6H4pZpWGzwzUZmeW",
+      "title": "Pupusas and Curtido",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes positive perspectives on parents and families",
+        "Communicates high expectations",
+        "Encourages learning within the context of culture",
+        "Incorporates different individual and cultural learning styles",
+        "Reshapes curriculum"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-05 18:06:25.272909+00"
+    },
+    {
+      "lesson_id": "1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda",
+      "title": "Seed Dispersal",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Incorporates different individual and cultural learning styles"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-05 18:51:01.868813+00"
+    },
+    {
+      "lesson_id": "1QLiWw08Qi5CSB6uMwwm27WDgMNG-LMhtqOu6z85VRkk",
+      "title": "Food Preservation 4-5",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum",
+        "Encourages learning within the context of culture",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-05 19:44:09.484827+00"
+    },
+    {
+      "lesson_id": "1f8rMP3RKcbOHCrh1td_H_3yHnnUyKAvIgyOT7f0Pac0",
+      "title": "Elementary Pollinator Unit Lesson 2: Biodiversity and Monoculture",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 14:07:36.948042+00"
+    },
+    {
+      "lesson_id": "1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg",
+      "title": "Potato Exploration",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Incorporates different individual and cultural learning styles",
+        "Encourages learning within the context of culture",
+        "Promotes positive perspectives on parents and families"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 14:20:31.129561+00"
+    },
+    {
+      "lesson_id": "lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3",
+      "title": "2nd Grade Decomposition Experiment Part 2",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Positions teacher as facilitator",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 14:29:05.84003+00"
+    },
+    {
+      "lesson_id": "lesson_55ea4a4030a04b4b9224cd4c15e7e769",
+      "title": "All About Lanternflies lesson",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 16:21:55.215903+00"
+    },
+    {
+      "lesson_id": "lesson_a6f5b5177f0642828362f61093e54de5",
+      "title": "1. Growing Indoor Edible Sprouts",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 17:16:17.177974+00"
+    },
+    {
+      "lesson_id": "1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg",
+      "title": "Hummus and Pita-revised",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations",
+        "Encourages learning within the context of culture",
+        "Promotes student-centered instruction",
+        "Positions teacher as facilitator"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 18:00:45.056034+00"
+    },
+    {
+      "lesson_id": "1ABQuZynHnhkJ27C0LG2aJgsOiJp4DSU_UK69KEtmN_w",
+      "title": "Bánh Mì",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 19:40:12.836386+00"
+    },
+    {
+      "lesson_id": "lesson_24e7b2e475854b719f1398ef1f2180a1",
+      "title": "Place-Based: Native Plants in Our Garden",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture",
+        "Reshapes curriculum"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 20:07:54.550547+00"
+    },
+    {
+      "lesson_id": "1Ps9Uvd1cYmq76REd7ogC0NOgVzNnpW4RcLppUaY0CJE",
+      "title": "Pollinators, Our Garden, and Us",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Incorporates different individual and cultural learning styles"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 20:23:16.13105+00"
+    },
+    {
+      "lesson_id": "10QIYILxb1r-2252Sd1_jg58SLgmHWElg09FFr4WAa5E",
+      "title": "City Gardens Simulator Game lesson",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-06 20:29:34.612561+00"
+    },
+    {
+      "lesson_id": "1lGcRDLkd7n5-CulckQb-rt1M5Q7SeA3K",
+      "title": "Making Potting Soil lesson",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Reshapes curriculum"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-10 18:24:32.939163+00"
+    },
+    {
+      "lesson_id": "lesson_acd65b548a0b4b5692b14e0971c8f911",
+      "title": "Lunar New Year Hand Pulled Noodles Lesson",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture",
+        "Promotes student-centered instruction",
+        "Incorporates different individual and cultural learning styles"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-10 18:46:27.176923+00"
+    },
+    {
+      "lesson_id": "1_lh2N1aBJIlnSq1fdlC3qc3_bYTxrCAOu_YRdaZMW5Y",
+      "title": "New Years Food Traditions 2027",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes positive perspectives on parents and families",
+        "Communicates high expectations",
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-10 18:59:14.110696+00"
+    },
+    {
+      "lesson_id": "lesson_8bce4ab6a0e6441b8ca1a49d620f5532",
+      "title": "Insect Detectives Lesson K-5",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-10 19:30:55.301291+00"
+    },
+    {
+      "lesson_id": "1wpDTMqhkTxV7LpJJDgy8iU_O6ksZJDjFetoDderTIQA",
+      "title": "Guyanese Curried Chickpeas",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes positive perspectives on parents and families",
+        "Promotes student-centered instruction",
+        "Reshapes curriculum"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-12 16:55:13.554795+00"
+    },
+    {
+      "lesson_id": "1UuTbP_4V0UhFCUjKKkHy7qaED4ZoyWHCMoHF70VflC4",
+      "title": "Seasonality Scavenger Hunt",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-24 17:37:07.64381+00"
+    },
+    {
+      "lesson_id": "lesson_6fe7881164eb44148eabb42d0e14bfec",
+      "title": "Recycle Gardening",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Promotes student-centered instruction",
+        "Reshapes curriculum"
+      ],
+      "mirror": [],
+      "updated_at": "2026-08-25 19:07:04.854033+00"
+    },
+    {
+      "lesson_id": "lesson_3d6af893f15c42ec9fda54068953c101",
+      "title": "Anthotype",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-09-08 14:56:13.036193+00"
+    },
+    {
+      "lesson_id": "1pjRERorBS4k4iil9VRgiRzjDHZtunwn3v-NFt7xTuwQ",
+      "title": "Mushroom Khao Soi",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Encourages learning within the context of culture"
+      ],
+      "mirror": [],
+      "updated_at": "2026-09-08 15:43:31.004649+00"
+    },
+    {
+      "lesson_id": "1YuKoPyuJb5ImdgY1vTne8snk8VQeCCAjaPcJcxWIfhM",
+      "title": "Sun Printing",
+      "column": "cultural_responsiveness_features",
+      "key": "culturalResponsivenessFeatures",
+      "column_value": [
+        "Communicates high expectations",
+        "Promotes student-centered instruction"
+      ],
+      "mirror": [],
+      "updated_at": "2026-09-09 18:12:01.115048+00"
+    }
+  ]
+}
