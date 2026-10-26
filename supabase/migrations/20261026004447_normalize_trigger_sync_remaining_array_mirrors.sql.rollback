@@ -1,0 +1,323 @@
+-- =====================================================
+-- ROLLBACK: 20261026004447_normalize_trigger_sync_remaining_array_mirrors.sql
+-- =====================================================
+-- The .sql.rollback extension keeps this file inert under `supabase db push`
+-- (the CLI only picks up .sql files). To roll back manually, run the
+-- statements below via psql or `mcp__supabase-*__execute_sql`.
+--
+-- Re-issues the 20260518000000 body of lessons_normalize_write() (sections
+-- (A), (V), (C)–(K); no (L)–(P)) and its COMMENT. Rows whose mirrors were
+-- re-synced by the extended trigger stay correct; the five pairs simply stop
+-- being re-synced on future writes.
+--
+-- Run 20261026004805_repair_array_mirror_drift.sql.rollback (if wanted)
+-- AFTER this file — it refuses to run while the extended trigger is live.
+-- =====================================================
+
+BEGIN;
+
+LOCK TABLE public.lessons IN SHARE ROW EXCLUSIVE MODE;
+
+-- Guard: only roll back the body this migration installed.
+DO $$
+DECLARE
+  v_md5 text;
+BEGIN
+  SELECT md5(btrim(regexp_replace(prosrc, '\s+', ' ', 'g'))) INTO v_md5
+  FROM pg_proc
+  WHERE pronamespace = 'public'::regnamespace
+    AND proname = 'lessons_normalize_write';
+  IF v_md5 IS DISTINCT FROM '6fe7be5e17293a3be9fdc87712ca81f3' THEN
+    RAISE EXCEPTION 'ROLLBACK GUARD: lessons_normalize_write body md5 is % (expected 6fe7be5e17293a3be9fdc87712ca81f3, the body 20261026004447 installed). Diff the live body before rolling back.', COALESCE(v_md5, 'NULL');
+  END IF;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.lessons_normalize_write()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_meta_value jsonb;
+BEGIN
+  -- Initialize NEW.metadata if NULL.
+  IF NEW.metadata IS NULL THEN
+    NEW.metadata := '{}'::jsonb;
+  END IF;
+
+  -- ============================================================
+  -- (A) Concepts rescue (must run BEFORE academicIntegration flatten).
+  --     Unchanged from 20260509000000.
+  -- ============================================================
+  IF jsonb_typeof(NEW.metadata->'academicIntegration') = 'object'
+     AND jsonb_typeof(NEW.metadata->'academicIntegration'->'concepts') = 'object'
+     AND NEW.metadata->'academicIntegration'->'concepts' <> '{}'::jsonb
+     AND NOT (
+       NEW.metadata ? 'academicConcepts'
+       AND jsonb_typeof(NEW.metadata->'academicConcepts') = 'object'
+       AND NEW.metadata->'academicConcepts' <> '{}'::jsonb
+     )
+  THEN
+    NEW.metadata := jsonb_set(
+      NEW.metadata,
+      '{academicConcepts}',
+      NEW.metadata->'academicIntegration'->'concepts'
+    );
+    RAISE NOTICE 'lessons_normalize_write rescued academicConcepts from object-shape academicIntegration; lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (B) lesson_format sync block REMOVED — D3 (column dropped).
+  -- ============================================================
+
+  -- ============================================================
+  -- (V) Value-validation on closed-enum metadata keys.
+  --     CHANGED 20260518000000 (D2.1): activityType allowed list drops 'both'.
+  --     Scope: 3 keys — activityType / tags / culturalResponsivenessFeatures.
+  --     EXCLUDED: seasonTiming. ~213 drift rows on TEST as of 2026-05-05.
+  --     Stage 1 worksheet round will settle canonical handling; trigger
+  --     validation deferred.
+  --     SOURCE: src/types/generated/enums.json (hand-synced).
+  -- ============================================================
+  PERFORM public._validate_meta_enum_values(
+    NEW.metadata, 'activityType',
+    ARRAY['cooking','garden','academic','craft']::text[],
+    NEW.lesson_id
+  );
+  PERFORM public._validate_meta_enum_values(
+    NEW.metadata, 'tags',
+    ARRAY['orientation','bilingual_handouts']::text[],
+    NEW.lesson_id
+  );
+  PERFORM public._validate_meta_enum_values(
+    NEW.metadata, 'culturalResponsivenessFeatures',
+    ARRAY[
+      'Promotes positive perspectives on parents and families',
+      'Communicates high expectations',
+      'Encourages learning within the context of culture',
+      'Promotes student-centered instruction',
+      'Incorporates different individual and cultural learning styles',
+      'Reshapes curriculum',
+      'Positions teacher as facilitator'
+    ]::text[],
+    NEW.lesson_id
+  );
+
+  -- ============================================================
+  -- (C) academic_integration (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'academicIntegration';
+  IF jsonb_typeof(v_meta_value) = 'object' THEN
+    v_meta_value := COALESCE(v_meta_value->'selected', '[]'::jsonb);
+    IF jsonb_typeof(v_meta_value) <> 'array' THEN
+      v_meta_value := '[]'::jsonb;
+    END IF;
+    NEW.metadata := jsonb_set(NEW.metadata, '{academicIntegration}', v_meta_value);
+    RAISE NOTICE 'lessons_normalize_write coerced field=academicIntegration before_shape=object after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+  IF COALESCE(array_length(NEW.academic_integration, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.academic_integration) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{academicIntegration}', to_jsonb(NEW.academic_integration));
+      RAISE NOTICE 'lessons_normalize_write coerced field=academicIntegration before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.academic_integration := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=academic_integration from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.academic_integration := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{academicIntegration}', to_jsonb(NEW.academic_integration));
+    RAISE NOTICE 'lessons_normalize_write coerced field=academicIntegration before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (D) activity_type (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'activityType';
+  IF COALESCE(array_length(NEW.activity_type, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.activity_type) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{activityType}', to_jsonb(NEW.activity_type));
+      RAISE NOTICE 'lessons_normalize_write coerced field=activityType before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.activity_type := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=activity_type from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.activity_type := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{activityType}', to_jsonb(NEW.activity_type));
+    RAISE NOTICE 'lessons_normalize_write coerced field=activityType before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (E) cooking_methods (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'cookingMethods';
+  IF COALESCE(array_length(NEW.cooking_methods, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.cooking_methods) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{cookingMethods}', to_jsonb(NEW.cooking_methods));
+      RAISE NOTICE 'lessons_normalize_write coerced field=cookingMethods before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.cooking_methods := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=cooking_methods from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.cooking_methods := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{cookingMethods}', to_jsonb(NEW.cooking_methods));
+    RAISE NOTICE 'lessons_normalize_write coerced field=cookingMethods before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (F) thematic_categories (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'thematicCategories';
+  IF COALESCE(array_length(NEW.thematic_categories, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.thematic_categories) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{thematicCategories}', to_jsonb(NEW.thematic_categories));
+      RAISE NOTICE 'lessons_normalize_write coerced field=thematicCategories before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.thematic_categories := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=thematic_categories from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.thematic_categories := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{thematicCategories}', to_jsonb(NEW.thematic_categories));
+    RAISE NOTICE 'lessons_normalize_write coerced field=thematicCategories before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (G) season_timing (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'seasonTiming';
+  IF COALESCE(array_length(NEW.season_timing, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.season_timing) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{seasonTiming}', to_jsonb(NEW.season_timing));
+      RAISE NOTICE 'lessons_normalize_write coerced field=seasonTiming before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.season_timing := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=season_timing from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.season_timing := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{seasonTiming}', to_jsonb(NEW.season_timing));
+    RAISE NOTICE 'lessons_normalize_write coerced field=seasonTiming before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (H) location_requirements (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'locationRequirements';
+  IF COALESCE(array_length(NEW.location_requirements, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.location_requirements) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{locationRequirements}', to_jsonb(NEW.location_requirements));
+      RAISE NOTICE 'lessons_normalize_write coerced field=locationRequirements before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.location_requirements := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=location_requirements from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.location_requirements := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{locationRequirements}', to_jsonb(NEW.location_requirements));
+    RAISE NOTICE 'lessons_normalize_write coerced field=locationRequirements before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (I) core_competencies (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'coreCompetencies';
+  IF COALESCE(array_length(NEW.core_competencies, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.core_competencies) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{coreCompetencies}', to_jsonb(NEW.core_competencies));
+      RAISE NOTICE 'lessons_normalize_write coerced field=coreCompetencies before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.core_competencies := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=core_competencies from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.core_competencies := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{coreCompetencies}', to_jsonb(NEW.core_competencies));
+    RAISE NOTICE 'lessons_normalize_write coerced field=coreCompetencies before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (J) cultural_heritage (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'culturalHeritage';
+  IF COALESCE(array_length(NEW.cultural_heritage, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.cultural_heritage) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{culturalHeritage}', to_jsonb(NEW.cultural_heritage));
+      RAISE NOTICE 'lessons_normalize_write coerced field=culturalHeritage before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.cultural_heritage := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=cultural_heritage from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.cultural_heritage := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{culturalHeritage}', to_jsonb(NEW.cultural_heritage));
+    RAISE NOTICE 'lessons_normalize_write coerced field=culturalHeritage before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  -- ============================================================
+  -- (K) social_emotional_learning (text[]) — column⇄metadata sync.
+  -- ============================================================
+  v_meta_value := NEW.metadata->'socialEmotionalLearning';
+  IF COALESCE(array_length(NEW.social_emotional_learning, 1), 0) > 0 THEN
+    IF NOT _meta_array_matches_column(v_meta_value, NEW.social_emotional_learning) THEN
+      NEW.metadata := jsonb_set(NEW.metadata, '{socialEmotionalLearning}', to_jsonb(NEW.social_emotional_learning));
+      RAISE NOTICE 'lessons_normalize_write coerced field=socialEmotionalLearning before_shape=% after_shape=array lesson_id=%',
+        COALESCE(jsonb_typeof(v_meta_value), 'null'), NEW.lesson_id;
+    END IF;
+  ELSIF jsonb_typeof(v_meta_value) = 'array' AND jsonb_array_length(v_meta_value) > 0 THEN
+    NEW.social_emotional_learning := (
+      SELECT array_agg(value)
+      FROM jsonb_array_elements_text(v_meta_value)
+    );
+    RAISE NOTICE 'lessons_normalize_write derived column=social_emotional_learning from meta array lesson_id=%', NEW.lesson_id;
+  ELSIF jsonb_typeof(v_meta_value) = 'string' THEN
+    NEW.social_emotional_learning := ARRAY[v_meta_value #>> '{}'];
+    NEW.metadata := jsonb_set(NEW.metadata, '{socialEmotionalLearning}', to_jsonb(NEW.social_emotional_learning));
+    RAISE NOTICE 'lessons_normalize_write coerced field=socialEmotionalLearning before_shape=string after_shape=array lesson_id=%', NEW.lesson_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+COMMENT ON FUNCTION public.lessons_normalize_write() IS
+'Trigger function: enforces column⇄metadata sync on lessons (column wins on disagreement). Coerces academicIntegration object→array with concepts rescue. Validates closed-enum metadata values for activityType / tags / culturalResponsivenessFeatures (RAISE EXCEPTION on drift). activityType allowed list reduced to 4 values in 20260518000000 (D2.1 retired ''both''). seasonTiming validation deferred to Stage 1. lesson_format sync (B) removed in 20260512000000_drop_lesson_format.sql (D3). Baseline 20260509000000.';
+
+NOTIFY pgrst, 'reload schema';
+
+COMMIT;
+
+-- Expected whitespace-normalised body md5 after rollback:
+--   d9f809c60efb8659e8e98f1b0e504dfc
