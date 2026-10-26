@@ -1,0 +1,168 @@
+-- =====================================================
+-- ROLLBACK: 20261026004805_repair_array_mirror_drift.sql
+-- =====================================================
+-- The .sql.rollback extension keeps this file inert under `supabase db push`
+-- (the CLI only picks up .sql files). To roll back manually, run it as ONE
+-- batch via psql or `mcp__supabase-*__execute_sql`.
+--
+-- Restores the drift BY DESIGN: resets the mirror of each of the 59 censused
+-- (lesson, key) pairs (scripts/mirror-drift/census-2026-10-22.prod.json) back
+-- to '[]'. Pairs the forward migration did not touch (row gone, column no
+-- longer equal to the census value, or mirror already differing from the
+-- column) are reported and skipped, never guessed at.
+--
+-- Refuses to run while the extended trigger
+-- (20261026004447_normalize_trigger_sync_remaining_array_mirrors.sql) is
+-- live — the next write would just re-sync the mirror. Run that migration's
+-- .rollback first. updated_at is not touched (the forward migration did not
+-- touch it either).
+-- =====================================================
+
+BEGIN;
+
+LOCK TABLE public.lessons IN SHARE ROW EXCLUSIVE MODE;
+
+-- Guard: the extended trigger must NOT be live.
+DO $$
+DECLARE
+  v_src text;
+BEGIN
+  SELECT p.prosrc INTO v_src
+  FROM pg_trigger t JOIN pg_proc p ON p.oid = t.tgfoid
+  WHERE t.tgrelid = 'public.lessons'::regclass
+    AND t.tgname = 'lessons_normalize_write_trg'
+    AND t.tgenabled <> 'D';
+  IF v_src IS NOT NULL AND strpos(v_src, 'jsonb_set(NEW.metadata, ''{observancesHolidays}''') > 0 THEN
+    RAISE EXCEPTION 'ROLLBACK GUARD: lessons_normalize_write still contains sections (L)-(P); roll back 20261026004447 first or the mirrors are re-synced on the next write';
+  END IF;
+END $$;
+
+CREATE TEMP TABLE _mirror_rollback_list (lesson_id text, key text, census_col text[]) ON COMMIT DROP;
+INSERT INTO _mirror_rollback_list VALUES
+    ('1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ', 'observancesHolidays', ARRAY['Beginning of year']::text[]),
+    ('1os1DorEA3uoqoMBp4d7d7dop8L5uN6iT', 'observancesHolidays', ARRAY['Beginning of year']::text[]),
+    ('lesson_cc0a5cb454f04aa0aaa5a30a33dac44b', 'observancesHolidays', ARRAY['Beginning of year']::text[]),
+    ('lesson_769f32694684408fbacbe1b02fc9d8a0', 'observancesHolidays', ARRAY['Indigenous Peoples'' Month']::text[]),
+    ('lesson_366d2fba34d34509811093f5adfb744b', 'observancesHolidays', ARRAY['Beginning of year']::text[]),
+    ('1CAKF0L0SYp5fgaXqZrrb4G-K3LzOu56phWV9JFg67U8', 'observancesHolidays', ARRAY['Indigenous Peoples'' Month']::text[]),
+    ('lesson_6fe7881164eb44148eabb42d0e14bfec', 'observancesHolidays', ARRAY['Earth Month']::text[]),
+    ('1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg', 'mainIngredients', ARRAY['Potatoes', 'Root vegetables']::text[]),
+    ('lesson_cc0a5cb454f04aa0aaa5a30a33dac44b', 'cookingSkills', ARRAY['Mixing & stirring', 'Blending & juicing', 'Plating & garnishing']::text[]),
+    ('1exshEQcKwxp6NmN2FbKX010ds55NMaohartd8NV4cEc', 'cookingSkills', ARRAY['Assembling dishes']::text[]),
+    ('lesson_011467fd86fa4339a745803f8643fe84', 'cookingSkills', ARRAY['Mixing & stirring', 'Roasting', 'Seasoning & spice blending']::text[]),
+    ('1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg', 'cookingSkills', ARRAY['Roasting']::text[]),
+    ('1Ps9Uvd1cYmq76REd7ogC0NOgVzNnpW4RcLppUaY0CJE', 'cookingSkills', ARRAY['Measuring', 'Mixing & stirring']::text[]),
+    ('1_lh2N1aBJIlnSq1fdlC3qc3_bYTxrCAOu_YRdaZMW5Y', 'cookingSkills', ARRAY['Tasting', 'Reading & following recipes']::text[]),
+    ('1MTqszq20L6jM1i-f19D2PzfrfTunNRmkP-GAl-ZYO9A', 'gardenSkills', ARRAY['Tool use and maintenance', 'Sensory exploration']::text[]),
+    ('1dqVb1CXvx_YVQ3cH8UuoGxYZ5A2MzU-bi8n4fZqBTXQ', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum', 'Incorporates different individual and cultural learning styles']::text[]),
+    ('1os1DorEA3uoqoMBp4d7d7dop8L5uN6iT', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction']::text[]),
+    ('lesson_cc0a5cb454f04aa0aaa5a30a33dac44b', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction', 'Positions teacher as facilitator']::text[]),
+    ('1ZAAaZJTBtqnmTbuf-5LujtpCm9ebqSl9aIGw48PZaCg', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations']::text[]),
+    ('1KPiyGcL_qXu_GkJc8VE_Qlh-y7dnvhlrd7YhJd5g2wM', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum', 'Positions teacher as facilitator']::text[]),
+    ('1exshEQcKwxp6NmN2FbKX010ds55NMaohartd8NV4cEc', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture', 'Reshapes curriculum', 'Promotes student-centered instruction']::text[]),
+    ('lesson_3c55d72d1d5f4f53babc2fae33929383', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum']::text[]),
+    ('1A34UK78EbtdHIVeiVe0lNiLJaJ557y-JlS_o673-hmw', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum', 'Positions teacher as facilitator', 'Promotes student-centered instruction']::text[]),
+    ('lesson_769f32694684408fbacbe1b02fc9d8a0', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction', 'Communicates high expectations', 'Reshapes curriculum', 'Encourages learning within the context of culture']::text[]),
+    ('lesson_432a153ed122455da80567b41996b8dc', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum', 'Promotes student-centered instruction']::text[]),
+    ('lesson_341634b793bd4fb69528013dbcd5d259', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations', 'Encourages learning within the context of culture']::text[]),
+    ('lesson_011467fd86fa4339a745803f8643fe84', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations']::text[]),
+    ('1eMFj5YDDAcR6yfLsPC-rhPf1se_Dr17OK-zxTBdZzcM', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations', 'Encourages learning within the context of culture']::text[]),
+    ('lesson_366d2fba34d34509811093f5adfb744b', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations', 'Promotes student-centered instruction']::text[]),
+    ('1CAKF0L0SYp5fgaXqZrrb4G-K3LzOu56phWV9JFg67U8', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture']::text[]),
+    ('17y_7ZaHUNVntuTL9Nkzm7rFHewK4UVcL_DPeSRcWk0c', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations']::text[]),
+    ('1YeuuUtmBUDf4OXVVfrSgSGOe_iaTEAz4', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction', 'Incorporates different individual and cultural learning styles', 'Positions teacher as facilitator']::text[]),
+    ('lesson_5a9dc306522d41b0b290259210b2fef9', 'culturalResponsivenessFeatures', ARRAY['Promotes positive perspectives on parents and families', 'Communicates high expectations', 'Encourages learning within the context of culture']::text[]),
+    ('lesson_f8c1e48f16784cbab04db0a109a9d1c6', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture']::text[]),
+    ('lesson_d73c3abe21f04406b664d7a9d899859c', 'culturalResponsivenessFeatures', ARRAY['Positions teacher as facilitator', 'Promotes student-centered instruction']::text[]),
+    ('1Us8lS78zALqD9be_Wj-cIO3uhbBd8m94ougM6NDqPTc', 'culturalResponsivenessFeatures', ARRAY['Incorporates different individual and cultural learning styles']::text[]),
+    ('19jKdVhI31juzrkZg6H4pZpWGzwzUZmeW', 'culturalResponsivenessFeatures', ARRAY['Promotes positive perspectives on parents and families', 'Communicates high expectations', 'Encourages learning within the context of culture', 'Incorporates different individual and cultural learning styles', 'Reshapes curriculum']::text[]),
+    ('1_WlZmDJv8Ql-sCLlOyxr2qL4zeb1GQda', 'culturalResponsivenessFeatures', ARRAY['Incorporates different individual and cultural learning styles']::text[]),
+    ('1QLiWw08Qi5CSB6uMwwm27WDgMNG-LMhtqOu6z85VRkk', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum', 'Encourages learning within the context of culture', 'Promotes student-centered instruction']::text[]),
+    ('1f8rMP3RKcbOHCrh1td_H_3yHnnUyKAvIgyOT7f0Pac0', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction']::text[]),
+    ('1gr1mOTpvK0-t559hYZyGsQ4nnRlHC4Zk0uXQHgkqutg', 'culturalResponsivenessFeatures', ARRAY['Incorporates different individual and cultural learning styles', 'Encourages learning within the context of culture', 'Promotes positive perspectives on parents and families']::text[]),
+    ('lesson_a689a2c8fc7b4f2daabc6ecbaf4fdce3', 'culturalResponsivenessFeatures', ARRAY['Positions teacher as facilitator', 'Promotes student-centered instruction']::text[]),
+    ('lesson_55ea4a4030a04b4b9224cd4c15e7e769', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations']::text[]),
+    ('lesson_a6f5b5177f0642828362f61093e54de5', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction']::text[]),
+    ('1eFmMW_gk1dR2uEpUWTVHylQAB7-OSAIKNfwc07Dbmgg', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations', 'Encourages learning within the context of culture', 'Promotes student-centered instruction', 'Positions teacher as facilitator']::text[]),
+    ('1ABQuZynHnhkJ27C0LG2aJgsOiJp4DSU_UK69KEtmN_w', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture']::text[]),
+    ('lesson_24e7b2e475854b719f1398ef1f2180a1', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture', 'Reshapes curriculum']::text[]),
+    ('1Ps9Uvd1cYmq76REd7ogC0NOgVzNnpW4RcLppUaY0CJE', 'culturalResponsivenessFeatures', ARRAY['Incorporates different individual and cultural learning styles']::text[]),
+    ('10QIYILxb1r-2252Sd1_jg58SLgmHWElg09FFr4WAa5E', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum', 'Promotes student-centered instruction']::text[]),
+    ('1lGcRDLkd7n5-CulckQb-rt1M5Q7SeA3K', 'culturalResponsivenessFeatures', ARRAY['Reshapes curriculum']::text[]),
+    ('lesson_acd65b548a0b4b5692b14e0971c8f911', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture', 'Promotes student-centered instruction', 'Incorporates different individual and cultural learning styles']::text[]),
+    ('1_lh2N1aBJIlnSq1fdlC3qc3_bYTxrCAOu_YRdaZMW5Y', 'culturalResponsivenessFeatures', ARRAY['Promotes positive perspectives on parents and families', 'Communicates high expectations', 'Encourages learning within the context of culture']::text[]),
+    ('lesson_8bce4ab6a0e6441b8ca1a49d620f5532', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations', 'Promotes student-centered instruction']::text[]),
+    ('1wpDTMqhkTxV7LpJJDgy8iU_O6ksZJDjFetoDderTIQA', 'culturalResponsivenessFeatures', ARRAY['Promotes positive perspectives on parents and families', 'Promotes student-centered instruction', 'Reshapes curriculum']::text[]),
+    ('1UuTbP_4V0UhFCUjKKkHy7qaED4ZoyWHCMoHF70VflC4', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction']::text[]),
+    ('lesson_6fe7881164eb44148eabb42d0e14bfec', 'culturalResponsivenessFeatures', ARRAY['Promotes student-centered instruction', 'Reshapes curriculum']::text[]),
+    ('lesson_3d6af893f15c42ec9fda54068953c101', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture']::text[]),
+    ('1pjRERorBS4k4iil9VRgiRzjDHZtunwn3v-NFt7xTuwQ', 'culturalResponsivenessFeatures', ARRAY['Encourages learning within the context of culture']::text[]),
+    ('1YuKoPyuJb5ImdgY1vTne8snk8VQeCCAjaPcJcxWIfhM', 'culturalResponsivenessFeatures', ARRAY['Communicates high expectations', 'Promotes student-centered instruction']::text[]);
+
+DO $$
+DECLARE
+  v_n bigint;
+BEGIN
+  SELECT count(*) INTO v_n FROM _mirror_rollback_list;
+  IF v_n <> 59 OR (SELECT count(DISTINCT lesson_id) FROM _mirror_rollback_list) <> 45 THEN
+    RAISE EXCEPTION 'ROLLBACK GUARD: allowlist is % pairs (expected 59 on 45 lessons)', v_n;
+  END IF;
+END $$;
+
+-- Eligible = row exists, live column still set-equals the census value, and
+-- the mirror currently equals the column (i.e. the forward repair's result).
+CREATE TEMP TABLE _mirror_rollback_eligible ON COMMIT DROP AS
+SELECT r.lesson_id, r.key
+FROM _mirror_rollback_list r
+JOIN public.lessons l ON l.lesson_id = r.lesson_id
+CROSS JOIN LATERAL (
+  SELECT CASE r.key
+    WHEN 'observancesHolidays'            THEN l.observances_holidays
+    WHEN 'mainIngredients'                THEN l.main_ingredients
+    WHEN 'gardenSkills'                   THEN l.garden_skills
+    WHEN 'cookingSkills'                  THEN l.cooking_skills
+    WHEN 'culturalResponsivenessFeatures' THEN l.cultural_responsiveness_features
+  END AS col
+) c
+WHERE c.col @> r.census_col AND c.col <@ r.census_col
+  AND public._meta_array_matches_column(l.metadata->r.key, c.col);
+
+DO $$
+DECLARE
+  r record;
+BEGIN
+  FOR r IN
+    SELECT l.lesson_id, l.key
+    FROM _mirror_rollback_list l
+    LEFT JOIN _mirror_rollback_eligible e USING (lesson_id, key)
+    WHERE e.lesson_id IS NULL
+    ORDER BY 1, 2
+  LOOP
+    RAISE NOTICE 'mirror rollback: skipping %:% (row missing, column moved, or mirror not equal to column)', r.lesson_id, r.key;
+  END LOOP;
+  RAISE NOTICE 'mirror rollback: resetting % pair(s) to []', (SELECT count(*) FROM _mirror_rollback_eligible);
+END $$;
+
+UPDATE public.lessons l
+SET metadata = l.metadata || d.patch
+FROM (
+  SELECT lesson_id, jsonb_object_agg(key, '[]'::jsonb) AS patch
+  FROM _mirror_rollback_eligible
+  GROUP BY lesson_id
+) d
+WHERE l.lesson_id = d.lesson_id;
+
+DO $$
+DECLARE
+  v_bad bigint;
+BEGIN
+  SELECT count(*) INTO v_bad
+  FROM _mirror_rollback_eligible e
+  JOIN public.lessons l ON l.lesson_id = e.lesson_id
+  WHERE l.metadata->e.key IS DISTINCT FROM '[]'::jsonb;
+  IF v_bad > 0 THEN
+    RAISE EXCEPTION 'ROLLBACK POST-ASSERT FAILED: % mirror(s) not reset to []', v_bad;
+  END IF;
+END $$;
+
+COMMIT;
