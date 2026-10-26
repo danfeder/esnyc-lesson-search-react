@@ -10,6 +10,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { bearerToken, requireUserWithRole } from '../_shared/auth.ts';
 import { reviewFormPayloadSchema } from '../_shared/metadataSchemas.ts';
 
 type ReviewDecision = 'approve_new' | 'approve_update' | 'needs_revision' | 'reject';
@@ -50,7 +51,8 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    const token = bearerToken(req);
+    if (!authHeader || !token) {
       return jsonResponse({ error: 'Missing authorization header' }, 401, corsHeaders);
     }
 
@@ -65,28 +67,17 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    const token = authHeader.replace('Bearer ', '');
-    const {
-      data: { user },
-      error: userErr,
-    } = await userClient.auth.getUser(token);
-    if (userErr || !user) {
-      return jsonResponse({ error: 'Invalid or expired token' }, 401, corsHeaders);
-    }
-
-    const { data: profile, error: profileErr } = await userClient
-      .from('user_profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
-
-    if (profileErr || !profile) {
-      return jsonResponse({ error: 'User profile not found' }, 403, corsHeaders);
-    }
-
-    if (!['reviewer', 'admin', 'super_admin'].includes(profile.role)) {
+    const gate = await requireUserWithRole(userClient, token, ['reviewer', 'admin', 'super_admin']);
+    if (!gate.ok) {
+      if (gate.reason === 'invalid_token') {
+        return jsonResponse({ error: 'Invalid or expired token' }, 401, corsHeaders);
+      }
+      if (gate.reason === 'no_profile') {
+        return jsonResponse({ error: 'User profile not found' }, 403, corsHeaders);
+      }
       return jsonResponse({ error: 'Insufficient role' }, 403, corsHeaders);
     }
+    const user = gate.user;
 
     const body = (await req.json().catch(() => null)) as CompleteReviewRequest | null;
     if (!body) {
