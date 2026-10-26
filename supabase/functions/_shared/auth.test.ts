@@ -10,7 +10,7 @@ const user = { id: 'user-1', email: 'reviewer@example.com' };
 
 function stubClient(opts: {
   getUser?: { data: { user: unknown }; error: unknown };
-  profile?: { role: string } | null;
+  profile?: { role: string; full_name?: string | null } | null;
 }): GateClient & { single: ReturnType<typeof vi.fn> } {
   const single = vi.fn(async () => ({ data: opts.profile ?? null, error: null }));
   return {
@@ -71,6 +71,7 @@ describe('requireUserWithRole', () => {
       ok: true,
       user,
       role: null,
+      fullName: null,
     });
     expect(client.single).not.toHaveBeenCalled();
   });
@@ -98,6 +99,17 @@ describe('requireUserWithRole', () => {
       ok: true,
       user,
       role: 'admin',
+      fullName: null,
+    });
+  });
+
+  it('returns the profile full_name as fullName on the ok path', async () => {
+    const client = stubClient({ profile: { role: 'admin', full_name: 'Ada Admin' } });
+    await expect(requireUserWithRole(client, 't', ['admin'])).resolves.toEqual({
+      ok: true,
+      user,
+      role: 'admin',
+      fullName: 'Ada Admin',
     });
   });
 });

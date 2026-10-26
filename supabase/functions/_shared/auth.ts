@@ -35,10 +35,10 @@ export function isServiceRoleToken(token: string, serviceRoleKey: string): boole
 
 export type UserGateFailure = 'invalid_token' | 'no_profile' | 'insufficient_role';
 export type UserGate =
-  | { ok: true; user: GateUser; role: string | null }
+  | { ok: true; user: GateUser; role: string | null; fullName: string | null }
   | { ok: false; reason: UserGateFailure };
 
-// allowedRoles === null → any authenticated user; no profile lookup.
+// allowedRoles === null → any authenticated user; no profile lookup (fullName null).
 export async function requireUserWithRole(
   client: GateClient,
   token: string,
@@ -47,14 +47,14 @@ export async function requireUserWithRole(
   const { data, error } = await client.auth.getUser(token);
   const user = data?.user as GateUser | null | undefined;
   if (error || !user) return { ok: false, reason: 'invalid_token' };
-  if (allowedRoles === null) return { ok: true, user, role: null };
+  if (allowedRoles === null) return { ok: true, user, role: null, fullName: null };
 
   const { data: profile } = await client
     .from('user_profiles')
-    .select('role')
+    .select('role, full_name')
     .eq('id', user.id)
     .single();
   if (!profile) return { ok: false, reason: 'no_profile' };
   if (!allowedRoles.includes(profile.role)) return { ok: false, reason: 'insufficient_role' };
-  return { ok: true, user, role: profile.role };
+  return { ok: true, user, role: profile.role, fullName: profile.full_name ?? null };
 }

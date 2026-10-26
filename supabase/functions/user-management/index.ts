@@ -196,8 +196,8 @@ serve(async (req) => {
                     data: {
                       recipientName: affectedUser.full_name || userEmail,
                       ...(willBeActive
-                        ? { reactivatedBy: user.email }
-                        : { deactivatedBy: user.email }),
+                        ? { reactivatedBy: gate.fullName || user.email }
+                        : { deactivatedBy: gate.fullName || user.email }),
                     },
                   }),
                 });
