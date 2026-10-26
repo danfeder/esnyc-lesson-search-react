@@ -73,7 +73,7 @@
     "@typescript-eslint/eslint-plugin": "^8.59.0",
     "@typescript-eslint/parser": "^8.54.0",
     "@vitejs/plugin-react": "^6.1.2",
-    "@vitest/coverage-v8": "^4.0.18",
+    "@vitest/coverage-v8": "^5.0.5",
     "@vitest/ui": "^4.0.18",
     "dotenv": "^17.2.4",
     "eslint": "^9.39.1",
