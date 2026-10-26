@@ -13,7 +13,7 @@
  * through both, and asserts behavioural equivalence. CI fails if they drift.
  *
  * `import { z } from 'zod'` resolves via supabase/functions/deno.json
- * (`{"imports": { "zod": "npm:zod@3.24.0" }}`) on the edge runtime; in node
+ * (`{"imports": { "zod": "npm:zod@^4.6.6" }}`) on the edge runtime; in node
  * (Vitest, scripts) it resolves from node_modules. Dual-runtime by design.
  */
 import { z } from 'zod';
