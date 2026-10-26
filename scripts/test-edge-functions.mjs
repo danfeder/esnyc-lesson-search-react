@@ -66,8 +66,11 @@ const HEADERS = {
 const FULL_SMOKE = [
   {
     name: 'smart-search',
-    payload: { query: 'garden', limit: 5, page: 1 },
+    payload: { query: 'garden' },
     assert: (json) => {
+      // Count-only contract: smart-search never returns rows.
+      if (json.lessons !== undefined)
+        throw new Error('lessons key present, expected count-only response');
       if (typeof json.totalCount !== 'number') throw new Error('totalCount not a number');
       if (json.totalCount <= 0) throw new Error(`totalCount=${json.totalCount}, expected > 0`);
       if (!Array.isArray(json.suggestions)) throw new Error('suggestions not an array');

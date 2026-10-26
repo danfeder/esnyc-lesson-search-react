@@ -49,7 +49,7 @@ supabase db diff --linked --schema public > production-diff.sql
 - `canonical_lessons` - Duplicate resolution tracking
 - `lesson_archive` - Deleted lesson audit trail (127 archived lessons)
 - `cultural_heritage_hierarchy` - Parent-child culture relationships (6 entries)
-- `search_synonyms` - Search expansion (60 synonym mappings)
+- `search_synonyms` - Search expansion (74 synonym mappings)
 - `lesson_collections` - User-created collections
 - `lesson_versions` - Version history
 - `submission_similarities` - Duplicate detection scores
@@ -296,7 +296,7 @@ supabase db push --linked
 
 ### Search Configuration Tables
 
-**search_synonyms** (60 rows):
+**search_synonyms** (74 rows; UNIQUE on (term, synonym_type, synonyms) since 20261023203832 — new seeds use ON CONFLICT (term, synonym_type, synonyms) DO NOTHING):
 ```
 term          | synonyms[]
 --------------|-----------
@@ -350,7 +350,7 @@ WHERE table_name = 'lessons'
 ## Related Documentation
 
 **Schema References**:
-- Schema dumps from the 2025-10 snapshot were removed in 2026-10; the baseline migration file above is the schema reference. Recover the dumps with `git show <sha>^:docs/production-schema-full.sql` (sha = the merge commit of the 2026-10 docs-archival PR).
+- Schema dumps from the 2025-10 snapshot were removed in 2026-10; the baseline migration file above is the schema reference. Recover the dumps with `git show 5c491f0^:docs/production-schema-full.sql` (the 2026-10 docs-archival PR, #649).
 
 **Architecture**:
 - `docs/architecture-decisions.md` - Why we made key decisions
