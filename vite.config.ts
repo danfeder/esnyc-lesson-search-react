@@ -18,14 +18,16 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          query: ['@tanstack/react-query'],
-          supabase: ['@supabase/supabase-js'],
-          ui: ['@headlessui/react', 'lucide-react'],
+        codeSplitting: {
+          groups: [
+            { name: 'vendor', test: /node_modules\/(react|react-dom)\// },
+            { name: 'router', test: /node_modules\/react-router(-dom)?\// },
+            { name: 'query', test: /node_modules\/@tanstack\/(react-)?query(-core)?\// },
+            { name: 'supabase', test: /node_modules\/@supabase\// },
+            { name: 'ui', test: /node_modules\/(@headlessui\/react|lucide-react)\// },
+          ],
         },
       },
     },

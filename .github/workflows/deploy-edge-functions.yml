@@ -50,7 +50,7 @@ jobs:
       strict_functions: ${{ steps.plan.outputs.strict_functions }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           # Full history needed so the PR three-dot diff
           # (origin/<base>...HEAD) can resolve its merge base on PRs
@@ -236,13 +236,12 @@ jobs:
         function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: latest
-          github-token: ${{ github.token }}
 
       - name: Capture pre-deploy version — ${{ matrix.function }} (TEST)
         id: pre
@@ -439,13 +438,12 @@ jobs:
         function: ${{ fromJSON(needs.detect-changes.outputs.functions) }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: latest
-          github-token: ${{ github.token }}
 
       - name: Capture pre-deploy version — ${{ matrix.function }} (PROD)
         id: pre
