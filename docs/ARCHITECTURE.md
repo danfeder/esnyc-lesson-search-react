@@ -73,18 +73,6 @@ const { data } = await supabase.rpc('search_lessons', {
 });
 ```
 
-**Check if lesson is a duplicate**:
-```sql
-SELECT is_duplicate_lesson('lesson-id-here');
--- Returns: true if lesson is marked as duplicate
-```
-
-**Get canonical lesson ID**:
-```sql
-SELECT get_canonical_lesson_id('duplicate-lesson-id');
--- Returns: canonical lesson ID if duplicate, NULL if canonical
-```
-
 **Expand search with synonyms**:
 ```sql
 SELECT expand_search_with_synonyms('garden');
@@ -666,8 +654,8 @@ similarity('garden', 'gardne') → 0.85  (85% similar)
 
 **Indexed**: GIN trigram indexes on title and summary
 ```sql
-CREATE INDEX idx_lessons_title ON lessons USING GIN (title gin_trgm_ops);
-CREATE INDEX idx_lessons_summary ON lessons USING GIN (summary gin_trgm_ops);
+CREATE INDEX idx_lessons_title_trgm ON lessons USING GIN (title gin_trgm_ops);
+CREATE INDEX idx_lessons_summary_trgm ON lessons USING GIN (summary gin_trgm_ops);
 ```
 
 **Used in ranking**: Combined with ts_rank for final relevance score
@@ -959,29 +947,6 @@ CREATE FUNCTION resolve_duplicate_group(
 -- Actions: Archives duplicates to lesson_archive, creates canonical_lessons entry, logs to duplicate_resolutions
 ```
 
-**get_canonical_lesson_id** - Resolve canonical
-
-```sql
-CREATE FUNCTION get_canonical_lesson_id(p_lesson_id TEXT) RETURNS TEXT
--- If lesson is duplicate: Returns canonical_id
--- If lesson is canonical: Returns NULL
--- Uses: canonical_lessons table
-```
-
-**is_duplicate_lesson** - Check duplicate status
-
-```sql
-CREATE FUNCTION is_duplicate_lesson(p_lesson_id TEXT) RETURNS BOOLEAN
--- Returns: true if lesson is in canonical_lessons.duplicate_id
-```
-
-**is_lesson_archived** - Check archive status
-
-```sql
-CREATE FUNCTION is_lesson_archived(p_lesson_id TEXT) RETURNS BOOLEAN
--- Returns: true if lesson exists in lesson_archive
-```
-
 ---
 
 ### 6.3 User/Auth Helper Functions
@@ -1001,21 +966,6 @@ CREATE FUNCTION is_admin() RETURNS BOOLEAN
 CREATE FUNCTION is_reviewer_or_above() RETURNS BOOLEAN
 -- Returns: true if role IN ('reviewer', 'admin', 'super_admin')
 -- Hierarchy: super_admin > admin > reviewer > teacher
-```
-
-**get_user_activity_metrics** - Usage analytics
-
-```sql
-CREATE FUNCTION get_user_activity_metrics(
-  p_user_id UUID,
-  p_days INT DEFAULT 30
-) RETURNS JSONB
--- Returns: {
---   login_count, last_login,
---   submissions_count, reviews_count,
---   bookmarks_count, collections_count
--- }
--- Used by: AdminAnalytics page
 ```
 
 ---
@@ -1162,8 +1112,8 @@ CREATE INDEX idx_lessons_search_vector ON lessons USING GIN (search_vector);
 
 **Fuzzy matching (trigram)**:
 ```sql
-CREATE INDEX idx_lessons_title ON lessons USING GIN (title gin_trgm_ops);
-CREATE INDEX idx_lessons_summary ON lessons USING GIN (summary gin_trgm_ops);
+CREATE INDEX idx_lessons_title_trgm ON lessons USING GIN (title gin_trgm_ops);
+CREATE INDEX idx_lessons_summary_trgm ON lessons USING GIN (summary gin_trgm_ops);
 -- Usage: Fallback when full-text has no results
 -- Enables: similarity(title, 'query') fast lookup
 ```
@@ -1211,16 +1161,10 @@ CREATE INDEX idx_lessons_tags ON lessons USING GIN (tags);
 
 **~20 duplicate indexes exist in production**:
 
-#### Trigram Duplicates (2 pairs):
-```sql
-idx_lessons_title       -- GIN trigram
-idx_lessons_title_trgm  -- GIN trigram (IDENTICAL!)
-
-idx_lessons_summary       -- GIN trigram
-idx_lessons_summary_trgm  -- GIN trigram (IDENTICAL!)
-```
-**Impact**: 2x write cost, 2x disk space for same functionality
-**Cleanup**: Drop `_trgm` variants, keep base names
+#### Trigram Duplicates (2 pairs) — resolved 2026-10:
+Resolved by migration `20261023203831_drop_dead_lessons_indexes.sql` (2026-10): dropped the
+zero-scan `idx_lessons_title` / `idx_lessons_summary`; the `_trgm` pair
+(`idx_lessons_title_trgm` / `idx_lessons_summary_trgm`) is the one the planner uses and stays.
 
 #### JSONB Path + Array Column Duplicates (8+ pairs):
 ```sql
@@ -1233,11 +1177,11 @@ idx_lessons_cultures                -- GIN on metadata->'culturalHeritage'
 idx_lessons_cultural_heritage       -- GIN on cultural_heritage array
 
 -- Academic:
-idx_lessons_academic                -- GIN on metadata->'academicIntegration'
+idx_lessons_academic                -- GIN on metadata->'academicIntegration' (dropped by 20261023203831, 2026-10)
 idx_lessons_academic_integration    -- GIN on academic_integration array
 
 -- SEL:
-idx_lessons_sel                            -- GIN on metadata->'socialEmotionalLearning'
+idx_lessons_sel                            -- GIN on metadata->'socialEmotionalLearning' (dropped by 20261023203831, 2026-10)
 idx_lessons_social_emotional_learning      -- GIN on social_emotional_learning array
 
 -- Seasons:
@@ -1570,18 +1514,16 @@ metadata = {"gradeLevel": ["5", "6", "7"], ...}  -- ❌ Duplicate
 
 **Problem**: 20+ indexes covering the same data via different access paths
 
-**Trigram duplicates**:
-```sql
-DROP INDEX idx_lessons_title_trgm;     -- Keep idx_lessons_title
-DROP INDEX idx_lessons_summary_trgm;   -- Keep idx_lessons_summary
-```
+**Trigram duplicates**: resolved by migration `20261023203831_drop_dead_lessons_indexes.sql`
+(2026-10) — dropped the zero-scan `idx_lessons_title` / `idx_lessons_summary`; the `_trgm` pair
+is the one the planner uses and stays.
 
 **JSONB path duplicates** (after metadata cleanup):
 ```sql
 DROP INDEX idx_lessons_themes;      -- Replaced by idx_lessons_thematic_categories
 DROP INDEX idx_lessons_cultures;    -- Replaced by idx_lessons_cultural_heritage
-DROP INDEX idx_lessons_academic;    -- Replaced by idx_lessons_academic_integration
-DROP INDEX idx_lessons_sel;         -- Replaced by idx_lessons_social_emotional_learning
+-- DROP INDEX idx_lessons_academic;    -- done: dropped by 20261023203831 (2026-10)
+-- DROP INDEX idx_lessons_sel;         -- done: dropped by 20261023203831 (2026-10)
 DROP INDEX idx_lessons_seasons;     -- Replaced by idx_lessons_season_timing
 DROP INDEX idx_lessons_cooking;     -- Replaced by idx_lessons_cooking_methods
 DROP INDEX idx_lessons_location;    -- Replaced by idx_lessons_location_requirements
@@ -1724,9 +1666,8 @@ All imports now use `@/types/database.types`.
 
 **Migration**:
 ```sql
--- Drop trigram duplicates
-DROP INDEX idx_lessons_title_trgm;
-DROP INDEX idx_lessons_summary_trgm;
+-- Trigram duplicates: resolved by 20261023203831_drop_dead_lessons_indexes.sql (2026-10) —
+-- dropped idx_lessons_title / idx_lessons_summary, kept the _trgm pair the planner uses
 
 -- Drop JSONB path indexes (after verifying)
 DROP INDEX idx_lessons_themes;
@@ -1947,7 +1888,7 @@ auth.role()  -- 'anon' | 'authenticated' | 'service_role'
 - Grade filter: Uses `idx_lessons_grade_levels` (GIN)
 - Theme filter: Uses `idx_lessons_thematic_categories` (GIN)
 - Text search: Uses `idx_lessons_search_vector` (GIN)
-- Fuzzy title: Uses `idx_lessons_title` (GIN trigram)
+- Fuzzy title: Uses `idx_lessons_title_trgm` (GIN trigram)
 
 **Cache hit rate** (React Query):
 - 5-minute stale time → ~60% cache hits for repeat searches

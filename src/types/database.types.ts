@@ -943,19 +943,19 @@ export type Database = {
       search_synonyms: {
         Row: {
           id: number;
-          synonym_type: string | null;
+          synonym_type: string;
           synonyms: string[];
           term: string;
         };
         Insert: {
           id?: number;
-          synonym_type?: string | null;
+          synonym_type: string;
           synonyms: string[];
           term: string;
         };
         Update: {
           id?: number;
-          synonym_type?: string | null;
+          synonym_type?: string;
           synonyms?: string[];
           term?: string;
         };
@@ -1770,22 +1770,6 @@ export type Database = {
         Args: { p_canonical_id: string; p_lesson_id: string };
         Returns: Json;
       };
-      check_group_already_resolved: {
-        Args: { p_lesson_ids: string[] };
-        Returns: {
-          is_resolved: boolean;
-          resolution_type: string;
-          resolved_at: string;
-        }[];
-      };
-      check_security_definer_views: {
-        Args: never;
-        Returns: {
-          has_security_definer: boolean;
-          view_name: string;
-          view_owner: string;
-        }[];
-      };
       complete_review_atomic: {
         Args: {
           p_decision: string;
@@ -1844,10 +1828,6 @@ export type Database = {
           title_sim: number;
         }[];
       };
-      get_canonical_lesson_id: {
-        Args: { p_lesson_id: string };
-        Returns: string;
-      };
       get_embedding_as_text: {
         Args: { lesson_id_param: string };
         Returns: string;
@@ -1873,45 +1853,11 @@ export type Database = {
           updated_at: string;
         }[];
       };
-      get_user_activity_metrics: {
-        Args: { p_days?: number; p_user_id: string };
-        Returns: {
-          last_activity: string;
-          last_login: string;
-          login_count: number;
-          review_count: number;
-          submission_count: number;
-        }[];
-      };
       get_user_emails: {
         Args: { user_ids: string[] };
         Returns: {
           email: string;
           id: string;
-        }[];
-      };
-      get_user_profiles_with_email: {
-        Args: never;
-        Returns: {
-          auth_created_at: string;
-          auth_email: string;
-          created_at: string;
-          email: string;
-          full_name: string;
-          grades_taught: string[];
-          id: string;
-          invitation_accepted_at: string;
-          invited_by: string;
-          is_active: boolean;
-          last_login_at: string;
-          last_sign_in_at: string;
-          login_count: number;
-          role: string;
-          school_id: string;
-          school_name: string;
-          subjects: string[];
-          updated_at: string;
-          user_id: string;
         }[];
       };
       has_duplicate_review_permission: { Args: never; Returns: boolean };
@@ -1920,8 +1866,6 @@ export type Database = {
         Returns: boolean;
       };
       is_admin: { Args: never; Returns: boolean } | { Args: { user_id: string }; Returns: boolean };
-      is_duplicate_lesson: { Args: { p_lesson_id: string }; Returns: boolean };
-      is_lesson_archived: { Args: { p_lesson_id: string }; Returns: boolean };
       is_reviewer_or_above: { Args: never; Returns: boolean };
       search_lessons: {
         Args: {
@@ -1962,7 +1906,6 @@ export type Database = {
       };
       show_limit: { Args: never; Returns: number };
       show_trgm: { Args: { '': string }; Returns: string[] };
-      track_user_login: { Args: { p_user_id: string }; Returns: undefined };
       unaccent: { Args: { '': string }; Returns: string };
       validate_invitation_token: {
         Args: { invite_token: string };
@@ -1976,15 +1919,6 @@ export type Database = {
           role: string;
           school_borough: string;
           school_name: string;
-        }[];
-      };
-      verify_rls_enabled: {
-        Args: never;
-        Returns: {
-          policy_count: number;
-          rls_enabled: boolean;
-          status: string;
-          table_name: string;
         }[];
       };
     };
