@@ -64,7 +64,6 @@ enum Permission {
   VIEW_LESSONS = 'view_lessons',
   SUBMIT_LESSONS = 'submit_lessons',
   REVIEW_LESSONS = 'review_lessons',
-  APPROVE_LESSONS = 'approve_lessons',
   DELETE_LESSONS = 'delete_lessons',
   
   // User Management
@@ -77,8 +76,6 @@ enum Permission {
   // Admin Features
   VIEW_ANALYTICS = 'view_analytics',
   MANAGE_DUPLICATES = 'manage_duplicates',
-  EXPORT_DATA = 'export_data',
-  SYSTEM_SETTINGS = 'system_settings'
 }
 ```
 
@@ -95,7 +92,6 @@ const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VIEW_LESSONS,
     Permission.SUBMIT_LESSONS,
     Permission.REVIEW_LESSONS,
-    Permission.APPROVE_LESSONS,
     Permission.VIEW_ANALYTICS
   ],
   
@@ -103,14 +99,12 @@ const DEFAULT_PERMISSIONS: Record<UserRole, Permission[]> = {
     Permission.VIEW_LESSONS,
     Permission.SUBMIT_LESSONS,
     Permission.REVIEW_LESSONS,
-    Permission.APPROVE_LESSONS,
     Permission.DELETE_LESSONS,
     Permission.VIEW_USERS,
     Permission.INVITE_USERS,
     Permission.EDIT_USERS,
     Permission.VIEW_ANALYTICS,
     Permission.MANAGE_DUPLICATES,
-    Permission.EXPORT_DATA
   ],
   
   [UserRole.SUPER_ADMIN]: [

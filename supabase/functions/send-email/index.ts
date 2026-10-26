@@ -270,7 +270,6 @@ function formatPermission(permission: string): string {
     view_lessons: 'View and search lesson library',
     submit_lessons: 'Submit new lesson plans',
     review_lessons: 'Review submitted lessons',
-    approve_lessons: 'Approve lessons for publication',
     delete_lessons: 'Delete lessons',
     view_users: 'View user accounts',
     invite_users: 'Invite new users',
@@ -279,8 +278,6 @@ function formatPermission(permission: string): string {
     manage_roles: 'Manage user roles and permissions',
     view_analytics: 'View analytics and reports',
     manage_duplicates: 'Manage duplicate lessons',
-    export_data: 'Export lesson data',
-    system_settings: 'Configure system settings',
   };
 
   return permissionMap[permission] || permission.replace(/_/g, ' ');
