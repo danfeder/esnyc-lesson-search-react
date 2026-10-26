@@ -404,11 +404,12 @@ describe('useEnhancedAuth', () => {
     it('returns correct permissions for teacher role', async () => {
       const result = await setupUserWithRole(UserRole.TEACHER);
 
-      for (const p of DEFAULT_PERMISSIONS[UserRole.TEACHER]) {
-        expect(result.current.hasPermission(p)).toBe(true);
+      // Exact set: every teacher default granted, every other permission denied.
+      for (const p of Object.values(Permission)) {
+        expect(result.current.hasPermission(p)).toBe(
+          DEFAULT_PERMISSIONS[UserRole.TEACHER].includes(p)
+        );
       }
-      // Teacher defaults carry nothing beyond VIEW/SUBMIT_LESSONS.
-      expect(result.current.hasPermission(Permission.VIEW_USERS)).toBe(false);
     });
 
     it('returns correct permissions for reviewer role', async () => {
