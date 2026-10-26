@@ -18,8 +18,8 @@ Phased delivery (see the design doc §8 + impl plan):
 
 - `docs/plans/2026-06-22-c02-cooking-ingredients-retag-design.md` — the WHY + LOCKED decisions. Read once at session start. **CHECK ITS STATUS LINE: if it says `Draft`, you are in (or before) the design-lock session** — Session 1 works the §4 "Open design questions" list against real code/data, locks the answers, flips Status to Locked, and authors the impl plan's concrete tasks. **NO implementation code before that happens.**
 - `docs/plans/2026-06-22-c02-cooking-ingredients-retag-implementation.md` — the WHAT (per-task). Ships as a SKELETON until Session 1 authors the tasks. Verify every snippet against current code before applying (line numbers drift); small repo-conformance adaptations OK, product/scope changes are not — if a needed change alters behavior/scope, stop and ask.
-- `docs/plans/2026-06-22-c02-cooking-ingredients-retag-execution-status.md` — WHERE we are. Survives /clear. The "Current State" header is the load-bearing orientation piece.
-- `docs/plans/2026-06-22-c02-cooking-ingredients-retag-execution-status-archive.md` — created when the status doc grows unwieldy or at a PR boundary; read on demand via `grep -n`, not at session start.
+- `docs/plans/archive/2026-06-22-c02-cooking-ingredients-retag-execution-status.md` — WHERE we are. Survives /clear. The "Current State" header is the load-bearing orientation piece.
+- `docs/plans/archive/2026-06-22-c02-cooking-ingredients-retag-execution-status-archive.md` — created when the status doc grows unwieldy or at a PR boundary; read on demand via `grep -n`, not at session start.
 
 # SESSION-START RITUAL (do FIRST, every session)
 
@@ -122,7 +122,7 @@ MEMORY.md references include `feedback_multi_session_execution`, `feedback_data_
 
 # EXECUTION STATUS FILE
 
-Already created at `docs/plans/2026-06-22-c02-cooking-ingredients-retag-execution-status.md`. If it's somehow missing, recreate from the status-doc template at `~/.claude/templates/multi-session-execution/status-doc-template.md`.
+Already created at `docs/plans/archive/2026-06-22-c02-cooking-ingredients-retag-execution-status.md`. If it's somehow missing, recreate from the status-doc template at `~/.claude/templates/multi-session-execution/status-doc-template.md`.
 
 # RIGHT NOW
 

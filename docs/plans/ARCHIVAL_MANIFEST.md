@@ -132,7 +132,10 @@ Same rules as above: `git mv`, exact filename kept, `archive/<name>` = `docs/pla
 ### C02 cooking-skills / ingredients re-tag — SHIPPED 2026-06-26 (do not re-run)
 - `archive/2026-06-22-c02-cooking-ingredients-retag-implementation.md` *(cited in `20260626000000` migration comment — frozen)*
 - `archive/2026-06-22-c02-vocab-retag-discussion-kickoff.md` *(was cited from the kept C02 design doc, re-pointed)*
-- Still in the root, pending PR #550 (which edits two of them): `2026-06-22-c02-cooking-ingredients-retag-execution-status.md`, its sister split `…-execution-status-archive.md`, and `…-kickoff.md`. Move the three together once #550 is merged or closed. The design doc stays for good (see Kept in place).
+- `archive/2026-06-22-c02-cooking-ingredients-retag-execution-status.md` *(moved 2026-10-25 once PR #550 was closed unmerged)*
+- `archive/2026-06-22-c02-cooking-ingredients-retag-execution-status-archive.md` *(sister split; moved 2026-10-25)*
+- `archive/2026-06-22-c02-cooking-ingredients-retag-kickoff.md` *(moved 2026-10-25; its status-doc links re-pointed to `archive/`)*
+- The design doc stays for good (see Kept in place).
 
 ### Go-live sprint T1–T5 — COMPLETE 2026-07-03
 - `archive/2026-07-01-brief-edge-auth-gate-fix.md`
@@ -214,9 +217,6 @@ Same rules as above: `git mv`, exact filename kept, `archive/<name>` = `docs/pla
 - `2026-07-04-pre-wave-plan.md`, `2026-07-04-wave-reviewer-runbook.md`, `2026-07-04-owner-uiux-candidates.md` → the still-pending spreadsheet wave (`fp5-briefs/`); also cited by frozen `20260707000000` / `20260708000000` migrations
 - `2026-07-17-backfill-session-runbook.md` → Drive-provenance initiative still open (Gate 3 pending); judgment keep
 - `2026-10-21-row-labels-brief.md` → locked design for PR #642, shipped 2026-10-22 (recent; archive in a later pass)
-
-**Held for an open PR (3)** — move together once PR #550 is merged or closed:
-- `2026-06-22-c02-cooking-ingredients-retag-execution-status.md` · `2026-06-22-c02-cooking-ingredients-retag-execution-status-archive.md` (sister split) · `2026-06-22-c02-cooking-ingredients-retag-kickoff.md`
 
 **Navigation:**
 - `ARCHIVAL_MANIFEST.md` — this file
