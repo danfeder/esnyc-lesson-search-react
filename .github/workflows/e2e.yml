@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Check for migration changes
         id: migration-check
@@ -33,7 +33,7 @@ jobs:
               - 'supabase/migrations/**/*.sql'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20.x'
           cache: 'npm'
@@ -43,10 +43,9 @@ jobs:
 
       - name: Setup Supabase CLI
         if: steps.migration-check.outputs.migrations == 'true'
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: latest
-          github-token: ${{ github.token }}
 
       - name: Show pending migrations (dry-run)
         if: steps.migration-check.outputs.migrations == 'true'

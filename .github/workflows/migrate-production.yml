@@ -20,7 +20,7 @@ jobs:
       migration_files: ${{ steps.check.outputs.migration_files }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 2
 
@@ -152,13 +152,12 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: latest
-          github-token: ${{ github.token }}
 
       - name: Link to production project
         run: supabase link --project-ref jxlxtzkmicfhchkhiojz
@@ -289,13 +288,12 @@ jobs:
       url: https://supabase.com/dashboard/project/jxlxtzkmicfhchkhiojz
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@v3
         with:
           version: latest
-          github-token: ${{ github.token }}
 
       - name: Link to production project
         run: supabase link --project-ref jxlxtzkmicfhchkhiojz
