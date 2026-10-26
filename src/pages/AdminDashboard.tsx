@@ -1,4 +1,4 @@
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Permission } from '@/types/auth';
 import { IntHubTile, IntPageHeader } from '@/components/Internal';
 
@@ -35,7 +35,7 @@ const adminSections: AdminSection[] = [
 ];
 
 export function AdminDashboard() {
-  const { hasPermission, loading: authLoading } = useEnhancedAuth();
+  const { hasPermission, loading: authLoading } = useAuth();
 
   if (authLoading) {
     return null;

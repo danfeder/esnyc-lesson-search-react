@@ -15,11 +15,11 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 
 import { makeReviewSupabaseMock, type TableResult } from '@/__tests__/helpers/supabaseReviewMock';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { UserRole, type EnhancedUserProfile } from '@/types/auth';
 
-vi.mock('@/hooks/useEnhancedAuth', () => ({
-  useEnhancedAuth: vi.fn(),
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(),
 }));
 
 // Module-scope mock, read LAZILY by the vi.mock factory's arrows (the
@@ -90,7 +90,7 @@ function renderProfile() {
 
 describe('UserProfile "My submissions" honest error state (FP-05)', () => {
   beforeEach(() => {
-    (useEnhancedAuth as Mock).mockReturnValue({
+    (useAuth as Mock).mockReturnValue({
       user: teacherUser,
       loading: false,
       profileError: false,
@@ -99,9 +99,9 @@ describe('UserProfile "My submissions" honest error state (FP-05)', () => {
     currentMock = makeReviewSupabaseMock(submissionsOkFixture);
   });
 
-  it('shows the account-blip error card (never "Sign in required") when this page\'s own hook instance errors', async () => {
+  it('shows the account-blip error card (never "Sign in required") when the shared auth context reports a blip with no user', async () => {
     const retryAuth = vi.fn();
-    (useEnhancedAuth as Mock).mockReturnValue({
+    (useAuth as Mock).mockReturnValue({
       user: null,
       loading: false,
       profileError: true,

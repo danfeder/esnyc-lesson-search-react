@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import {
   AuditAction,
   EnhancedUserProfile,
@@ -74,7 +74,7 @@ function avatarTone(role: string): string {
 export function AdminUserDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { user: currentUser, hasPermission, loading: authLoading } = useEnhancedAuth();
+  const { user: currentUser, hasPermission, loading: authLoading } = useAuth();
 
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
   const [email, setEmail] = useState<string>('Loading…');

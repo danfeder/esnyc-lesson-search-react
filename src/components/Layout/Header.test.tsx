@@ -3,8 +3,8 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { useSearchStore } from '@/stores/searchStore';
 
-vi.mock('@/hooks/useEnhancedAuth', () => ({
-  useEnhancedAuth: () => ({ user: null, hasPermission: () => false, loading: false }),
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({ user: null, hasPermission: () => false, loading: false }),
 }));
 
 import { Header } from '@/components/Layout/Header';

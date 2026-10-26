@@ -3,23 +3,24 @@
  *
  * Pins the fix for the fail-open silent redirect: a transient profile-fetch
  * failure (`profileError`) must render "Couldn't load your account" + Retry
- * instead of dumping a signed-in user on `/`. The hook is mocked per test —
- * this suite is about the CONSUMER's branching, not the hook internals (those
- * are covered in useEnhancedAuth.test.ts).
+ * instead of dumping a signed-in user on `/`. useAuth() (the AuthProvider
+ * context hook) is mocked per test — this suite is about the CONSUMER's
+ * branching, not the pipeline internals (those are covered in
+ * useEnhancedAuth.test.ts).
  */
 import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { UserRole, type AuthContextValue, type EnhancedUserProfile } from '@/types/auth';
 
-vi.mock('@/hooks/useEnhancedAuth', () => ({
-  useEnhancedAuth: vi.fn(),
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: vi.fn(),
 }));
 
-const mockUseEnhancedAuth = useEnhancedAuth as Mock;
+const mockUseAuth = useAuth as Mock;
 
 const activeUser: EnhancedUserProfile = {
   id: 'user-1',
@@ -38,12 +39,9 @@ function makeAuthValue(overrides: Partial<AuthContextValue> = {}): AuthContextVa
     loading: false,
     profileError: false,
     retryAuth: vi.fn().mockResolvedValue(undefined),
-    permissions: [],
     hasPermission: vi.fn().mockReturnValue(true),
     hasAnyPermission: vi.fn().mockReturnValue(true),
     hasAllPermissions: vi.fn().mockReturnValue(true),
-    isAdmin: vi.fn().mockReturnValue(false),
-    isReviewer: vi.fn().mockReturnValue(false),
     ...overrides,
   };
 }
@@ -72,7 +70,7 @@ describe('ProtectedRoute (FP-07 auth blip)', () => {
   });
 
   it('redirects a genuinely signed-out user (no profileError) to the redirect target', () => {
-    mockUseEnhancedAuth.mockReturnValue(makeAuthValue());
+    mockUseAuth.mockReturnValue(makeAuthValue());
 
     renderProtected();
 
@@ -83,9 +81,7 @@ describe('ProtectedRoute (FP-07 auth blip)', () => {
 
   it('shows "Couldn\'t load your account" + Retry (no redirect) on a profile-fetch blip', async () => {
     const retryAuth = vi.fn().mockResolvedValue(undefined);
-    mockUseEnhancedAuth.mockReturnValue(
-      makeAuthValue({ user: null, profileError: true, retryAuth })
-    );
+    mockUseAuth.mockReturnValue(makeAuthValue({ user: null, profileError: true, retryAuth }));
 
     const user = userEvent.setup();
     renderProtected();
@@ -100,7 +96,7 @@ describe('ProtectedRoute (FP-07 auth blip)', () => {
   });
 
   it('falls through to children when a later refetch errors but user is still known', () => {
-    mockUseEnhancedAuth.mockReturnValue(makeAuthValue({ user: activeUser, profileError: true }));
+    mockUseAuth.mockReturnValue(makeAuthValue({ user: activeUser, profileError: true }));
 
     renderProtected();
 

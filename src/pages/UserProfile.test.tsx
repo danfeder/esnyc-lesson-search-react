@@ -2,28 +2,27 @@
  * UserProfile page-level regression tests for FP-06 (fp1-audit state-bugs F2).
  *
  * The contract under test: page data loads are keyed on the STABLE `user.id`,
- * not the `user` object identity. `useEnhancedAuth` setUser()s a fresh object
+ * not the `user` object identity. `AuthProvider` setUser()s a fresh object
  * on every background auth event (hourly TOKEN_REFRESHED, tab refocus,
  * USER_UPDATED from a password change) — before the fix that re-fired the load
  * effect, flashed the full-page spinner, and setFormData() clobbered
  * in-progress edits. Mocking the hook and swapping its returned object is the
  * precise lever for that contract.
  *
- * NOTE for the F4 slice (auth context provider): if useEnhancedAuth is lifted
- * into an AuthProvider, the vi.mock target below changes — mechanical update.
+ * Auth is mocked at the useAuth() boundary (the AuthProvider context hook).
  */
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import type { ReactElement } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { UserRole, type AuthContextValue, type EnhancedUserProfile } from '@/types/auth';
 import { UserProfile } from '@/pages/UserProfile';
 
-vi.mock('@/hooks/useEnhancedAuth');
+vi.mock('@/hooks/useAuth');
 
-const mockUseEnhancedAuth = vi.mocked(useEnhancedAuth);
+const mockUseAuth = vi.mocked(useAuth);
 const mockFrom = supabase.from as Mock;
 
 // Table rows keyed by the id the page passes to `.eq(...)` — the user-id-change
@@ -53,12 +52,9 @@ function makeAuth(user: EnhancedUserProfile | null): AuthContextValue {
     loading: false,
     profileError: false,
     retryAuth: vi.fn(),
-    permissions: [],
     hasPermission: vi.fn(() => false),
     hasAnyPermission: vi.fn(() => false),
     hasAllPermissions: vi.fn(() => false),
-    isAdmin: vi.fn(() => false),
-    isReviewer: vi.fn(() => false),
   };
 }
 
@@ -127,7 +123,7 @@ function rerenderProfile(rerender: (ui: ReactElement) => void) {
 }
 
 async function loadPage() {
-  mockUseEnhancedAuth.mockReturnValue(makeAuth(makeUser()));
+  mockUseAuth.mockReturnValue(makeAuth(makeUser()));
   const view = renderProfile();
   // Readonly "Full name" value proves the initial load completed.
   await screen.findByText('DB Name');
@@ -154,7 +150,7 @@ describe('UserProfile — FP-06 background auth events must not clobber edits', 
 
     // Fresh object, identical fields — what every TOKEN_REFRESHED /
     // USER_UPDATED / redundant SIGNED_IN hands to consumers.
-    mockUseEnhancedAuth.mockReturnValue(makeAuth(makeUser()));
+    mockUseAuth.mockReturnValue(makeAuth(makeUser()));
     rerenderProfile(rerender);
 
     expect(screen.getByPlaceholderText('Enter your full name')).toHaveValue('Draft Name');
@@ -165,7 +161,7 @@ describe('UserProfile — FP-06 background auth events must not clobber edits', 
   it('a different user id refetches page data for the new user', async () => {
     const { rerender } = await loadPage();
 
-    mockUseEnhancedAuth.mockReturnValue(
+    mockUseAuth.mockReturnValue(
       makeAuth(makeUser({ id: 'user-2', user_id: 'user-2', email: 'second@example.com' }))
     );
     rerenderProfile(rerender);
@@ -177,7 +173,7 @@ describe('UserProfile — FP-06 background auth events must not clobber edits', 
   it('sign-out renders the signed-out branch without fetching', async () => {
     const { rerender } = await loadPage();
 
-    mockUseEnhancedAuth.mockReturnValue(makeAuth(null));
+    mockUseAuth.mockReturnValue(makeAuth(null));
     rerenderProfile(rerender);
 
     // In the real app ProtectedRoute redirects first; this pins the in-page

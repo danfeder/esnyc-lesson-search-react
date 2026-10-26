@@ -53,7 +53,7 @@ export function useLesson(id: string) {
 | `useLessonById(lessonId, { enabled })` | Single-lesson fetch for `/lesson/:id` permalinks (anon-readable; hides retired lessons) |
 | `useLessonSuggestions({ filters, enabled })` | Zero-result suggestions via the `smart-search` edge function |
 | `useLessonStats()` | Total lesson / category counts for the landing stats |
-| `useEnhancedAuth()` | Auth state with role + permissions |
+| `useAuth()` | Auth state + permission checks, read from the single `<AuthProvider>` at the App root (`useEnhancedAuth` is the internal pipeline — never call it from components) |
 | `useDebounce(value, delay)` | Debounce an input value (300 ms typical) |
 | `useMediaQuery(query)` | Subscribe to a CSS media query; gates the desktop split view (SSR/jsdom-safe) |
 | `useSearchStore()` | Zustand store: filters + sort + layout prefs (`src/stores/`); pagination is NOT here |

@@ -133,7 +133,7 @@ describe('useEnhancedAuth', () => {
       });
     });
 
-    it('returns empty permissions when not authenticated', async () => {
+    it('grants no permission when not authenticated', async () => {
       mockGetUser.mockResolvedValue({
         data: { user: null },
         error: null,
@@ -145,7 +145,7 @@ describe('useEnhancedAuth', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(result.current.permissions).toEqual([]);
+      expect(result.current.hasPermission(Permission.VIEW_LESSONS)).toBe(false);
     });
   });
 
@@ -404,33 +404,36 @@ describe('useEnhancedAuth', () => {
     it('returns correct permissions for teacher role', async () => {
       const result = await setupUserWithRole(UserRole.TEACHER);
 
-      expect(result.current.permissions).toEqual(
-        expect.arrayContaining(DEFAULT_PERMISSIONS[UserRole.TEACHER])
-      );
-      expect(result.current.permissions.length).toBe(DEFAULT_PERMISSIONS[UserRole.TEACHER].length);
+      for (const p of DEFAULT_PERMISSIONS[UserRole.TEACHER]) {
+        expect(result.current.hasPermission(p)).toBe(true);
+      }
+      // Teacher defaults carry nothing beyond VIEW/SUBMIT_LESSONS.
+      expect(result.current.hasPermission(Permission.VIEW_USERS)).toBe(false);
     });
 
     it('returns correct permissions for reviewer role', async () => {
       const result = await setupUserWithRole(UserRole.REVIEWER);
 
-      expect(result.current.permissions).toEqual(
-        expect.arrayContaining(DEFAULT_PERMISSIONS[UserRole.REVIEWER])
-      );
+      for (const p of DEFAULT_PERMISSIONS[UserRole.REVIEWER]) {
+        expect(result.current.hasPermission(p)).toBe(true);
+      }
     });
 
     it('returns correct permissions for admin role', async () => {
       const result = await setupUserWithRole(UserRole.ADMIN);
 
-      expect(result.current.permissions).toEqual(
-        expect.arrayContaining(DEFAULT_PERMISSIONS[UserRole.ADMIN])
-      );
+      for (const p of DEFAULT_PERMISSIONS[UserRole.ADMIN]) {
+        expect(result.current.hasPermission(p)).toBe(true);
+      }
     });
 
     it('returns correct permissions for super_admin role', async () => {
       const result = await setupUserWithRole(UserRole.SUPER_ADMIN);
 
       // Super admin has all permissions
-      expect(result.current.permissions.length).toBe(Object.values(Permission).length);
+      for (const p of Object.values(Permission)) {
+        expect(result.current.hasPermission(p)).toBe(true);
+      }
     });
   });
 
@@ -457,8 +460,8 @@ describe('useEnhancedAuth', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(result.current.permissions).toContain(Permission.VIEW_ANALYTICS);
-      expect(result.current.permissions).toContain(Permission.VIEW_LESSONS); // Default
+      expect(result.current.hasPermission(Permission.VIEW_ANALYTICS)).toBe(true);
+      expect(result.current.hasPermission(Permission.VIEW_LESSONS)).toBe(true); // Default
     });
 
     it('removes explicitly disabled permissions', async () => {
@@ -483,8 +486,8 @@ describe('useEnhancedAuth', () => {
         expect(result.current.loading).toBe(false);
       });
 
-      expect(result.current.permissions).not.toContain(Permission.VIEW_LESSONS);
-      expect(result.current.permissions).toContain(Permission.SUBMIT_LESSONS); // Other default
+      expect(result.current.hasPermission(Permission.VIEW_LESSONS)).toBe(false);
+      expect(result.current.hasPermission(Permission.SUBMIT_LESSONS)).toBe(true); // Other default
     });
   });
 
@@ -577,78 +580,6 @@ describe('useEnhancedAuth', () => {
       expect(
         result.current.hasAllPermissions([Permission.VIEW_LESSONS, Permission.DELETE_LESSONS])
       ).toBe(false);
-    });
-  });
-
-  describe('role helpers', () => {
-    async function setupUserWithRole(role: UserRole, isActive = true) {
-      const mockUser = createMockAuthUser();
-      const mockProfile = createMockProfile({ role, is_active: isActive });
-
-      mockGetUser.mockResolvedValue({
-        data: { user: mockUser },
-        error: null,
-      });
-
-      mockFrom.mockReturnValue(createMockProfileFetchQuery({ data: mockProfile, error: null }));
-
-      const { result } = renderHook(() => useEnhancedAuth());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      return result;
-    }
-
-    it('isAdmin returns true for admin', async () => {
-      const result = await setupUserWithRole(UserRole.ADMIN);
-      expect(result.current.isAdmin()).toBe(true);
-    });
-
-    it('isAdmin returns true for super_admin', async () => {
-      const result = await setupUserWithRole(UserRole.SUPER_ADMIN);
-      expect(result.current.isAdmin()).toBe(true);
-    });
-
-    it('isAdmin returns false for teacher', async () => {
-      const result = await setupUserWithRole(UserRole.TEACHER);
-      expect(result.current.isAdmin()).toBe(false);
-    });
-
-    it('isAdmin returns false for reviewer', async () => {
-      const result = await setupUserWithRole(UserRole.REVIEWER);
-      expect(result.current.isAdmin()).toBe(false);
-    });
-
-    it('isAdmin returns false for inactive admin', async () => {
-      const result = await setupUserWithRole(UserRole.ADMIN, false);
-      expect(result.current.isAdmin()).toBe(false);
-    });
-
-    it('isReviewer returns true for reviewer', async () => {
-      const result = await setupUserWithRole(UserRole.REVIEWER);
-      expect(result.current.isReviewer()).toBe(true);
-    });
-
-    it('isReviewer returns true for admin', async () => {
-      const result = await setupUserWithRole(UserRole.ADMIN);
-      expect(result.current.isReviewer()).toBe(true);
-    });
-
-    it('isReviewer returns true for super_admin', async () => {
-      const result = await setupUserWithRole(UserRole.SUPER_ADMIN);
-      expect(result.current.isReviewer()).toBe(true);
-    });
-
-    it('isReviewer returns false for teacher', async () => {
-      const result = await setupUserWithRole(UserRole.TEACHER);
-      expect(result.current.isReviewer()).toBe(false);
-    });
-
-    it('isReviewer returns false for inactive reviewer', async () => {
-      const result = await setupUserWithRole(UserRole.REVIEWER, false);
-      expect(result.current.isReviewer()).toBe(false);
     });
   });
 

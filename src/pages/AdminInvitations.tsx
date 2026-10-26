@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Permission, UserInvitation } from '@/types/auth';
 import { Download, Plus, Search, Send, XCircle } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
@@ -70,7 +70,7 @@ function statusBadgeVariant(inv: UserInvitation): IntStatus {
 export function AdminInvitations() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, hasPermission, loading: authLoading } = useEnhancedAuth();
+  const { user, hasPermission, loading: authLoading } = useAuth();
   const [invitations, setInvitations] = useState<UserInvitation[]>([]);
   const [loading, setLoading] = useState(true);
   // Honest-error state (FP-05/FP-07): a failed LOAD gets a persistent inline

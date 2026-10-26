@@ -10,6 +10,13 @@ import {
 } from '@/types/auth';
 import { logger } from '@/utils/logger';
 
+/**
+ * INTERNAL — the auth pipeline (session check, profile fetch/create,
+ * onAuthStateChange subscription, permission helpers). Called exactly once,
+ * by <AuthProvider>. Components must read auth through useAuth()
+ * (src/hooks/useAuth.ts); calling this hook directly re-runs the whole
+ * pipeline per call site.
+ */
 export function useEnhancedAuth(): AuthContextValue {
   const [user, setUser] = useState<EnhancedUserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -196,30 +203,13 @@ export function useEnhancedAuth(): AuthContextValue {
     [permissions, user]
   );
 
-  const isAdmin = useCallback((): boolean => {
-    if (!user || !user.is_active) return false;
-    return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
-  }, [user]);
-
-  const isReviewer = useCallback((): boolean => {
-    if (!user || !user.is_active) return false;
-    return (
-      user.role === UserRole.REVIEWER ||
-      user.role === UserRole.ADMIN ||
-      user.role === UserRole.SUPER_ADMIN
-    );
-  }, [user]);
-
   return {
     user,
     loading,
     profileError,
     retryAuth,
-    permissions,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
-    isAdmin,
-    isReviewer,
   };
 }

@@ -5,7 +5,7 @@ import CreatableSelect from 'react-select/creatable';
 import type { SingleValue } from 'react-select';
 import { Clock, Info, Send } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { UserRole, InvitationFormData, Permission } from '@/types/auth';
 import { logger } from '@/utils/logger';
 import { sendInvitationEmail } from '@/utils/invitationEmail';
@@ -40,7 +40,7 @@ function isValidEmail(value: string): boolean {
 
 export function AdminInviteUser() {
   const navigate = useNavigate();
-  const { user, hasPermission, loading: authLoading } = useEnhancedAuth();
+  const { user, hasPermission, loading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState<InvitationFormData>({
     email: '',

@@ -149,15 +149,12 @@ export interface AuthContextValue {
   profileError: boolean;
   /** Re-run the auth + profile check after a profileError. */
   retryAuth: () => Promise<void>;
-  permissions: Permission[];
 
   hasPermission: (permission: Permission) => boolean;
 
   hasAnyPermission: (permissions: Permission[]) => boolean;
 
   hasAllPermissions: (permissions: Permission[]) => boolean;
-  isAdmin: () => boolean;
-  isReviewer: () => boolean;
 }
 
 // Invitation form data
