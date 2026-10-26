@@ -5,7 +5,7 @@
  * null result as "no duplicate" and proceeds — it surfaces a retryable inline
  * message and disables Send. Retry (on a now-clear check) re-enables Send.
  *
- * `useEnhancedAuth` mocked to an INVITE_USERS admin; a table-aware supabase mock
+ * `useAuth` mocked to an INVITE_USERS admin; a table-aware supabase mock
  * controls the `user_invitations` dup-check result (schools resolve empty).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -42,8 +42,8 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
-vi.mock('@/hooks/useEnhancedAuth', () => ({
-  useEnhancedAuth: () => ({
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
     user: { id: 'admin-1', email: 'admin@test.com', full_name: 'Admin' },
     hasPermission: () => true,
     loading: false,

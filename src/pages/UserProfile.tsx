@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { parseDbError } from '@/utils/errorHandling';
 import { AuthModal } from '@/components/Auth/AuthModal';
 import { SchoolBadge, type School } from '@/components/Schools';
@@ -57,8 +57,8 @@ interface LessonSubmission {
 
 export function UserProfile() {
   const navigate = useNavigate();
-  const { user, loading: authLoading, profileError, retryAuth } = useEnhancedAuth();
-  // useEnhancedAuth re-fetches the profile on EVERY auth event (hourly token
+  const { user, loading: authLoading, profileError, retryAuth } = useAuth();
+  // AuthProvider re-fetches the profile on EVERY auth event (hourly token
   // refresh, tab refocus, password change) and setUser()s a new object
   // identity each time. Key all page data-loading on the stable user id so
   // background auth events don't re-trigger loads — a reload here flashes the
@@ -284,8 +284,8 @@ export function UserProfile() {
   }
 
   if (!user && profileError) {
-    // This page's own hook instance can blip independently of ProtectedRoute's
-    // (each useEnhancedAuth call runs its own profile fetch) — a blip here must
+    // Defensive: auth is shared via AuthProvider, so ProtectedRoute normally
+    // catches this first; keep the branch for direct renders — a blip here must
     // not masquerade as "Sign in required".
     return (
       <div className="int-shell-root">

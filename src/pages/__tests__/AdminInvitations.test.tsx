@@ -6,7 +6,7 @@
  * your first teacher…" empty CTA as the resting state. A genuine empty response
  * still shows the empty CTA. Retry refetches.
  *
- * `useEnhancedAuth` is mocked to a VIEW_USERS admin; supabase supplies the one
+ * `useAuth` is mocked to a VIEW_USERS admin; supabase supplies the one
  * `user_invitations` list query (read lazily so tests can swap it per call).
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -27,8 +27,8 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
-vi.mock('@/hooks/useEnhancedAuth', () => ({
-  useEnhancedAuth: () => ({
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
     user: { id: 'admin-1', email: 'admin@test.com' },
     hasPermission: () => true,
     loading: false,

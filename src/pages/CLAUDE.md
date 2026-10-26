@@ -14,7 +14,7 @@
 export function PageName() {
   // 1. Hooks FIRST (NEVER conditional)
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user } = useAuth();
   
   // 2. Data fetching
   const { data, isLoading, error } = useQuery({

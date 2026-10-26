@@ -42,7 +42,7 @@ The user management system has been successfully implemented with all core featu
 #### Technical Implementation
 - **Database Schema**: All tables, indexes, and RLS policies in place
 - **Edge Functions**: Deployed email sending and API endpoints
-- **Enhanced Auth Hook**: `useEnhancedAuth` with permission checking
+- **Auth context**: `<AuthProvider>` + `useAuth()` with permission checking (pipeline: `useEnhancedAuth`)
 - **Protected Routes**: Automatic permission-based route protection
 
 ## Proposed System Architecture

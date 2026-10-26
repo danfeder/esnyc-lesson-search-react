@@ -6,7 +6,7 @@
  * reserved for a genuine zero-row profile (`.single()` → PGRST116). Retry
  * recovers.
  *
- * `useEnhancedAuth` mocked to a full-permission admin; a table-aware supabase
+ * `useAuth` mocked to a full-permission admin; a table-aware supabase
  * mock supplies `.single()` for the profile and thenables for the sub-fetches.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -58,8 +58,8 @@ vi.mock('@/lib/supabase', () => ({
   },
 }));
 
-vi.mock('@/hooks/useEnhancedAuth', () => ({
-  useEnhancedAuth: () => ({
+vi.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
     user: { id: 'admin-1', role: 'admin' },
     hasPermission: () => true,
     loading: false,

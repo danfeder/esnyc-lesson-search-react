@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, User, Plus, Shield, LogOut, LogIn, ChevronDown, Users, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { AuthModal } from '@/components/Auth/AuthModal';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Permission } from '@/types/auth';
 import { useSearchStore } from '@/stores/searchStore';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -25,7 +25,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, hasPermission } = useEnhancedAuth();
+  const { user, hasPermission } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);

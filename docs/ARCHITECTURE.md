@@ -2291,7 +2291,7 @@ serve(async (req) => {
 - Search store: `src/stores/searchStore.ts`
 - URL ⇄ store sync: `src/hooks/useUrlSync.ts` + `src/utils/urlParams.ts`
 - Facet-count badges (client-side): `src/hooks/useFacetCounts.ts` + `src/utils/facetCounts.ts`
-- Auth context: `src/hooks/useEnhancedAuth.ts`
+- Auth context: `src/components/Auth/AuthProvider.tsx` (one provider at the App root) + `src/hooks/useAuth.ts` (consumer hook); pipeline in `src/hooks/useEnhancedAuth.ts`
 
 **Search Implementation**:
 - Infinite scroll hook: `src/hooks/useLessonSearch.ts`

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Permission } from '@/types/auth';
-import { useEnhancedAuth } from '@/hooks/useEnhancedAuth';
+import { useAuth } from '@/hooks/useAuth';
 import { Shield, AlertCircle } from 'lucide-react';
 
 interface ProtectedRouteProps {
@@ -19,8 +19,7 @@ export function ProtectedRoute({
   fallback,
   redirectTo = '/',
 }: ProtectedRouteProps) {
-  const { user, loading, profileError, retryAuth, hasAllPermissions, hasAnyPermission } =
-    useEnhancedAuth();
+  const { user, loading, profileError, retryAuth, hasAllPermissions, hasAnyPermission } = useAuth();
   const location = useLocation();
 
   // Show loading state

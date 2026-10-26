@@ -14,6 +14,7 @@ import { SearchPage } from '@/pages/SearchPage';
 import { NotFound } from '@/pages/NotFound';
 import { useLessonStats } from '@/hooks/useLessonStats';
 import { ProtectedRoute } from '@/components/Auth/ProtectedRoute';
+import { AuthProvider } from '@/components/Auth/AuthProvider';
 import { Permission } from '@/types/auth';
 import { logger } from '@/utils/logger';
 
@@ -208,7 +209,9 @@ function App() {
       }}
     >
       <QueryClientProvider client={queryClient}>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
         {/* React Query DevTools - only in development */}
         {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>
