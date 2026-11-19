@@ -402,7 +402,9 @@ supabase db reset
 ## GitHub Secrets (for reference)
 
 The CI pipeline uses these secrets:
-- `SUPABASE_ACCESS_TOKEN` - API access
+- `SUPABASE_ACCESS_TOKEN` - API access (edge-function deploys, TEST tooling)
+- `SUPABASE_DB_URL_PROD` - Production session-pooler connection string. Used by `migrate-production.yml` and `backup-production.yml`, which connect with `--db-url` instead of `supabase link` (the CLI's temporary login role is refused on production). Validated and masked by `.github/scripts/prod-db-url.py`
+- `BACKUP_ENCRYPTION_PASSPHRASE` - Encrypts the weekly production backup artifact; also kept outside GitHub, since backups cannot be restored without it
 - `SUPABASE_DB_PASSWORD_TEST` - Test database password
 - `SUPABASE_SERVICE_ROLE_KEY_TEST` - Test service role
 - `VITE_SUPABASE_ANON_KEY_TEST` - Test anon key
