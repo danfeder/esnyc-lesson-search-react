@@ -45,7 +45,9 @@ jobs:
         if: steps.migration-check.outputs.migrations == 'true'
         uses: supabase/setup-cli@v3
         with:
-          version: latest
+          # Pinned (not `latest`, which moved to an incompatible 3.x) — keep in
+          # step with backup-production.yml; bump deliberately.
+          version: 2.122.0
 
       - name: Show pending migrations (dry-run)
         if: steps.migration-check.outputs.migrations == 'true'
