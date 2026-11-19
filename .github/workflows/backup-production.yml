@@ -1,12 +1,19 @@
 name: Backup production database
 
-# Weekly snapshot of the production Supabase database, uploaded as a GitHub
-# Actions artifact (90-day retention by default, free).
+# Weekly snapshot of the production Supabase database, uploaded as an
+# ENCRYPTED GitHub Actions artifact (90-day retention, free).
 #
 # Reasoning: we're on Supabase's free tier, so Point-in-Time Recovery is not
 # available. This workflow is our primary recovery mechanism — if a migration
 # or a data-script mistake damages prod, we can restore from the most recent
 # artifact. Manual trigger is always available via the Actions UI.
+#
+# Encryption: workflow artifacts are readable by anyone with read access to
+# the repository, so the dump is never uploaded in the clear. It is packed and
+# encrypted with a passphrase (repo secret BACKUP_ENCRYPTION_PASSPHRASE,
+# AES-256 via gpg) and only the encrypted archive plus a contents-free manifest
+# are uploaded. The passphrase must ALSO be kept somewhere outside GitHub (a
+# password manager): without it the backups cannot be restored.
 #
 # Authentication matches reset-test-db.yml: `supabase link` + SUPABASE_ACCESS_TOKEN
 # (project-scoped token already configured as a repo secret). No database
@@ -34,6 +41,7 @@ jobs:
   backup:
     name: Dump production schema + data
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     # Intentionally NOT scoped to `environment: production`. GitHub environment
     # approval gates apply to scheduled runs too — attaching one here would
     # make every Monday's run block in Waiting-for-approval forever, defeating
@@ -47,13 +55,31 @@ jobs:
       # supabase link uses a hardcoded project-ref and the backup/ directory
       # is created fresh.
 
+      - name: Check encryption passphrase is configured
+        # Fail before touching production if the dump could not be encrypted.
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          if [ -z "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
+            echo "::error::Repo secret BACKUP_ENCRYPTION_PASSPHRASE is not set. Refusing to dump: backups are only ever uploaded encrypted."
+            exit 1
+          fi
+          if [ "${#BACKUP_ENCRYPTION_PASSPHRASE}" -lt 20 ]; then
+            echo "::error::BACKUP_ENCRYPTION_PASSPHRASE is shorter than 20 characters. Use a long random passphrase."
+            exit 1
+          fi
+          echo "Encryption passphrase is configured."
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
         with:
-          # Matches `reset-test-db.yml` and `migrate-production.yml`. If this
-          # convention changes (pin to a specific version), update all three
-          # together.
-          version: latest
+          # Pinned, not `latest`: CLI 3.0.0 changed `supabase db dump` to
+          # target the local stack by default and silently broke this job.
+          # 2.122.0 is the last release these workflows ran on successfully.
+          # Keep the pin identical in every workflow that pins it, and bump
+          # deliberately: read the release notes, then run this workflow by
+          # hand before trusting the schedule.
+          version: 2.122.0
 
       - name: Link to production project
         run: supabase link --project-ref jxlxtzkmicfhchkhiojz
@@ -61,16 +87,18 @@ jobs:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Dump data
+        # `--linked` is explicit so the target can never silently become the
+        # (non-existent) local stack again.
         run: |
           mkdir -p backup
-          supabase db dump --data-only -f backup/data.sql
+          supabase db dump --linked --data-only -f backup/data.sql
           echo "Data dump: $(wc -l < backup/data.sql) lines, $(du -h backup/data.sql | cut -f1)"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Dump schema
         run: |
-          supabase db dump -f backup/schema.sql
+          supabase db dump --linked -f backup/schema.sql
           echo "Schema dump: $(wc -l < backup/schema.sql) lines, $(du -h backup/schema.sql | cut -f1)"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -95,42 +123,110 @@ jobs:
             exit 1
           fi
 
-      - name: Write manifest
+      - name: Encrypt dump and remove plaintext
+        # Packs data.sql + schema.sql, encrypts the archive, proves the
+        # encrypted file decrypts back to byte-identical dumps, then deletes
+        # every plaintext file. After this step backup/ holds only the
+        # encrypted archive and the manifest.
+        env:
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
         run: |
+          set -euo pipefail
+          cd backup
+
+          DATA_LINES=$(wc -l < data.sql)
+          SCHEMA_LINES=$(wc -l < schema.sql)
+          DATA_BYTES=$(wc -c < data.sql)
+          SCHEMA_BYTES=$(wc -c < schema.sql)
+          sha256sum data.sql schema.sql > ../plain.sha256
+
+          # The passphrase travels on file descriptor 3, never on the command
+          # line (which would be visible in the process list).
+          tar -czf - data.sql schema.sql \
+            | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
+                  --symmetric --cipher-algo AES256 \
+                  --s2k-mode 3 --s2k-digest-algo SHA512 --s2k-count 65011712 \
+                  -o prod-backup.tar.gz.gpg 3<<<"$BACKUP_ENCRYPTION_PASSPHRASE"
+
+          # Round-trip proof: decrypt into a scratch directory and compare
+          # checksums with the originals. A backup that cannot be decrypted is
+          # worse than no backup, so fail the run rather than upload it.
+          VERIFY_DIR=$(mktemp -d)
+          gpg --batch --quiet --pinentry-mode loopback --passphrase-fd 3 \
+              --decrypt prod-backup.tar.gz.gpg 3<<<"$BACKUP_ENCRYPTION_PASSPHRASE" \
+            | tar -xzf - -C "$VERIFY_DIR"
+          (cd "$VERIFY_DIR" && sha256sum --check --quiet "$OLDPWD/../plain.sha256")
+          rm -rf "$VERIFY_DIR"
+          echo "Round-trip verified: encrypted archive decrypts to identical dumps."
+
+          # Remove every plaintext copy before anything can be uploaded.
+          rm -f data.sql schema.sql ../plain.sha256
+
           {
             echo "timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
             echo "git_sha: ${GITHUB_SHA}"
             echo "workflow_run: ${GITHUB_RUN_ID}"
             echo "project_ref: jxlxtzkmicfhchkhiojz"
-            echo ""
-            echo "--- file sizes ---"
-            ls -la backup/
-          } > backup/manifest.txt
-          cat backup/manifest.txt
+            echo "archive: prod-backup.tar.gz.gpg (gpg symmetric, AES256)"
+            echo "archive_sha256: $(sha256sum prod-backup.tar.gz.gpg | cut -d' ' -f1)"
+            echo "archive_bytes: $(wc -c < prod-backup.tar.gz.gpg)"
+            echo "data.sql: ${DATA_LINES} lines, ${DATA_BYTES} bytes"
+            echo "schema.sql: ${SCHEMA_LINES} lines, ${SCHEMA_BYTES} bytes"
+          } > manifest.txt
+          cat manifest.txt
+
+          {
+            echo "DATA_LINES=${DATA_LINES}"
+            echo "SCHEMA_LINES=${SCHEMA_LINES}"
+          } >> "$GITHUB_ENV"
+
+      - name: Refuse to upload anything unencrypted
+        # Belt and braces: the artifact directory must contain exactly the
+        # encrypted archive and the manifest, nothing else.
+        run: |
+          set -euo pipefail
+          UNEXPECTED=$(find backup -type f ! -name 'prod-backup.tar.gz.gpg' ! -name 'manifest.txt' | sort)
+          if [ -n "$UNEXPECTED" ]; then
+            echo "::error::Unexpected file(s) in backup/ — refusing to upload:"
+            echo "$UNEXPECTED"
+            exit 1
+          fi
+          test -s backup/prod-backup.tar.gz.gpg
+          # An OpenPGP symmetric message is binary; a plaintext SQL dump is not.
+          if head -c 4096 backup/prod-backup.tar.gz.gpg | grep -qaE 'INSERT INTO|CREATE TABLE|COPY '; then
+            echo "::error::Archive looks like plaintext SQL — refusing to upload."
+            exit 1
+          fi
+          echo "backup/ contains only the encrypted archive and the manifest."
 
       - name: Summary
         run: |
           {
-            echo "## 📦 Production backup complete"
+            echo "## 📦 Production backup complete (encrypted)"
             echo ""
-            echo "- Data dump: \`$(wc -l < backup/data.sql)\` lines"
-            echo "- Schema dump: \`$(wc -l < backup/schema.sql)\` lines"
-            echo "- Artifact retained for **90 days** by default."
+            echo "- Data dump: \`${DATA_LINES}\` lines"
+            echo "- Schema dump: \`${SCHEMA_LINES}\` lines"
+            echo "- Artifact: \`prod-backup.tar.gz.gpg\`, retained for **90 days**."
             echo ""
-            echo "To restore locally:"
+            echo "To restore locally (you will be asked for the backup passphrase):"
             echo '```bash'
-            echo "# Download the artifact, then:"
+            echo "# Download and unzip the artifact, then:"
+            echo "gpg --decrypt prod-backup.tar.gz.gpg | tar -xz   # writes data.sql + schema.sql"
             echo "supabase db reset  # drops local DB"
-            echo "psql -f backup/schema.sql \"\$LOCAL_DB_URL\""
-            echo "psql -f backup/data.sql \"\$LOCAL_DB_URL\""
+            echo "psql -f schema.sql \"\$LOCAL_DB_URL\""
+            echo "psql -f data.sql \"\$LOCAL_DB_URL\""
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload backup artifact
+      - name: Upload encrypted backup artifact
         uses: actions/upload-artifact@v7
         with:
+          # migrate-production.yml's freshness gate matches on the
+          # `prod-backup-` prefix — keep it.
           name: prod-backup-${{ github.run_id }}
-          path: backup/
+          path: |
+            backup/prod-backup.tar.gz.gpg
+            backup/manifest.txt
           retention-days: 90
           if-no-files-found: error
 
