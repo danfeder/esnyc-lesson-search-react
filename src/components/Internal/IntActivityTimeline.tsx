@@ -102,7 +102,14 @@ export function IntActivityTimeline({
       {rows.map((row) => {
         const disp = resolveDisplay(row.action);
         const diff = computeDiff(row);
-        const actor = resolveActor ? resolveActor(row.actor_id) : row.actor_id;
+        // A row with no actor was written with no signed-in user: a backend
+        // job, or a change made directly in the database.
+        const actor =
+          row.actor_id == null
+            ? 'System'
+            : resolveActor
+              ? resolveActor(row.actor_id)
+              : row.actor_id;
         const when = new Date(row.created_at);
         return (
           <li key={row.id} className="adm-timeline-item">
