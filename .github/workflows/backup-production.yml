@@ -15,9 +15,12 @@ name: Backup production database
 # are uploaded. The passphrase must ALSO be kept somewhere outside GitHub (a
 # password manager): without it the backups cannot be restored.
 #
-# Authentication matches reset-test-db.yml: `supabase link` + SUPABASE_ACCESS_TOKEN
-# (project-scoped token already configured as a repo secret). No database
-# password needed for a logical data-only dump via the CLI.
+# Connection: the job connects with a database connection string (repo secret
+# SUPABASE_DB_URL_PROD, the project's *session pooler* URI), the same way
+# e2e.yml reaches TEST. It deliberately does not use `supabase link` + the
+# CLI's temporary login role: that mechanism stopped working against this
+# project in November 2026, and a backup job should not depend on it. As a
+# side effect this job no longer needs the account-wide SUPABASE_ACCESS_TOKEN.
 
 on:
   schedule:
@@ -46,20 +49,20 @@ jobs:
     # approval gates apply to scheduled runs too — attaching one here would
     # make every Monday's run block in Waiting-for-approval forever, defeating
     # the whole point of automated backups. The workflow only reads from prod
-    # and uploads an artifact; no deploy-style approval is warranted. The
-    # SUPABASE_ACCESS_TOKEN secret is repo-scoped (also used without an
-    # environment gate by reset-test-db.yml for its prod dump step).
+    # and uploads an encrypted artifact; no deploy-style approval is warranted.
 
     steps:
-      # No `actions/checkout` — this workflow doesn't read any repo files.
-      # supabase link uses a hardcoded project-ref and the backup/ directory
-      # is created fresh.
+      # No `actions/checkout` — this workflow doesn't read any repo files; the
+      # backup/ directory is created fresh.
 
-      - name: Check encryption passphrase is configured
-        # Fail before touching production if the dump could not be encrypted.
+      - name: Check required secrets
+        # Fail before touching production if the dump could not be encrypted,
+        # or if the connection string is missing or points somewhere else.
         env:
           BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+          SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
         run: |
+          set -euo pipefail
           if [ -z "${BACKUP_ENCRYPTION_PASSPHRASE:-}" ]; then
             echo "::error::Repo secret BACKUP_ENCRYPTION_PASSPHRASE is not set. Refusing to dump: backups are only ever uploaded encrypted."
             exit 1
@@ -69,6 +72,41 @@ jobs:
             exit 1
           fi
           echo "Encryption passphrase is configured."
+
+          if [ -z "${SUPABASE_DB_URL_PROD:-}" ]; then
+            echo "::error::Repo secret SUPABASE_DB_URL_PROD is not set. It must hold the production session-pooler connection string (postgresql://postgres.<ref>:<password>@<host>:5432/postgres)."
+            exit 1
+          fi
+
+          # Validate the connection string without ever printing it, and mask
+          # the password in every later log line (raw and percent-decoded).
+          python3 - <<'PY'
+          import os, sys
+          from urllib.parse import urlsplit, unquote
+
+          PROD_REF = "jxlxtzkmicfhchkhiojz"
+
+          def fail(msg):
+              print(f"::error::SUPABASE_DB_URL_PROD {msg}")
+              sys.exit(1)
+
+          try:
+              u = urlsplit(os.environ["SUPABASE_DB_URL_PROD"].strip())
+              port = u.port
+          except ValueError:
+              fail("is not a valid connection string.")
+          if u.scheme not in ("postgresql", "postgres"):
+              fail("must start with postgresql://")
+          if not u.hostname or not u.username or not u.password:
+              fail("must include a user, a password and a host.")
+          if PROD_REF not in (u.username + "@" + u.hostname):
+              fail("does not reference the production project. Refusing to back up a different database.")
+          if port == 6543:
+              fail("uses port 6543 (transaction pooler). pg_dump needs the session pooler on port 5432.")
+          for secret in {u.password, unquote(u.password)}:
+              print(f"::add-mask::{secret}")
+          print(f"Connection string OK: host={u.hostname} port={port or 5432}")
+          PY
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
@@ -81,27 +119,22 @@ jobs:
           # hand before trusting the schedule.
           version: 2.122.0
 
-      - name: Link to production project
-        run: supabase link --project-ref jxlxtzkmicfhchkhiojz
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
       - name: Dump data
-        # `--linked` is explicit so the target can never silently become the
-        # (non-existent) local stack again.
+        # `--db-url` names the target explicitly, so it can never silently
+        # become the (non-existent) local stack.
         run: |
           mkdir -p backup
-          supabase db dump --linked --data-only -f backup/data.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL_PROD" --data-only -f backup/data.sql
           echo "Data dump: $(wc -l < backup/data.sql) lines, $(du -h backup/data.sql | cut -f1)"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
 
       - name: Dump schema
         run: |
-          supabase db dump --linked -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL_PROD" -f backup/schema.sql
           echo "Schema dump: $(wc -l < backup/schema.sql) lines, $(du -h backup/schema.sql | cut -f1)"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
 
       - name: Sanity-check dump sizes
         # `supabase db dump` can exit 0 and write a nearly-empty file on
