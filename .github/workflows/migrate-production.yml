@@ -168,7 +168,7 @@ jobs:
         # login role, which production has refused since November 2026.
         # The script validates the URL without printing it, refuses any
         # project other than production, and masks the password in the log.
-        run: python3 .github/scripts/prod-db-url.py check
+        run: python3 scripts/ci/prod-db-url.py check
         env:
           SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
 
@@ -193,7 +193,7 @@ jobs:
           # The output is published to the step summary and a PR comment,
           # where log masking does not apply, so it is redacted first.
           supabase db push --dry-run --db-url "$SUPABASE_DB_URL_PROD" 2>&1 \
-            | python3 .github/scripts/prod-db-url.py redact \
+            | python3 scripts/ci/prod-db-url.py redact \
             | tee /tmp/migration-report/dry-run.txt
           cat /tmp/migration-report/dry-run.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
@@ -316,7 +316,7 @@ jobs:
         # login role, which production has refused since November 2026.
         # The script validates the URL without printing it, refuses any
         # project other than production, and masks the password in the log.
-        run: python3 .github/scripts/prod-db-url.py check
+        run: python3 scripts/ci/prod-db-url.py check
         env:
           SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
 
@@ -332,7 +332,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           supabase db push --db-url "$SUPABASE_DB_URL_PROD" 2>&1 \
-            | python3 .github/scripts/prod-db-url.py redact \
+            | python3 scripts/ci/prod-db-url.py redact \
             | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         env:
@@ -348,7 +348,7 @@ jobs:
           echo "## 📋 Current Migration Status" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           supabase migration list --db-url "$SUPABASE_DB_URL_PROD" 2>&1 \
-            | python3 .github/scripts/prod-db-url.py redact \
+            | python3 scripts/ci/prod-db-url.py redact \
             | tee -a $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

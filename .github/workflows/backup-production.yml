@@ -37,7 +37,8 @@ concurrency:
 permissions:
   # `issues: write` is used by the on-failure step to file a GitHub issue
   # if the dump fails, so a silent failure doesn't degrade recovery posture
-  # unnoticed. No checkout step, so no `contents: read` needed.
+  # unnoticed. `contents: read` is for the sparse checkout of scripts/ci.
+  contents: read
   issues: write
 
 jobs:
@@ -52,12 +53,19 @@ jobs:
     # and uploads an encrypted artifact; no deploy-style approval is warranted.
 
     steps:
-      # No `actions/checkout` — this workflow doesn't read any repo files; the
-      # backup/ directory is created fresh.
+      - name: Checkout CI helper
+        # Only the connection-string guard is needed from the repo; the
+        # backup/ directory is created fresh in the workspace.
+        uses: actions/checkout@v7
+        with:
+          sparse-checkout: scripts/ci
+          sparse-checkout-cone-mode: false
 
       - name: Check required secrets
         # Fail before touching production if the dump could not be encrypted,
         # or if the connection string is missing or points somewhere else.
+        # prod-db-url.py validates the string without printing it and masks
+        # the password in every later log line.
         env:
           BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
           SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
@@ -72,41 +80,7 @@ jobs:
             exit 1
           fi
           echo "Encryption passphrase is configured."
-
-          if [ -z "${SUPABASE_DB_URL_PROD:-}" ]; then
-            echo "::error::Repo secret SUPABASE_DB_URL_PROD is not set. It must hold the production session-pooler connection string (postgresql://postgres.<ref>:<password>@<host>:5432/postgres)."
-            exit 1
-          fi
-
-          # Validate the connection string without ever printing it, and mask
-          # the password in every later log line (raw and percent-decoded).
-          python3 - <<'PY'
-          import os, sys
-          from urllib.parse import urlsplit, unquote
-
-          PROD_REF = "jxlxtzkmicfhchkhiojz"
-
-          def fail(msg):
-              print(f"::error::SUPABASE_DB_URL_PROD {msg}")
-              sys.exit(1)
-
-          try:
-              u = urlsplit(os.environ["SUPABASE_DB_URL_PROD"].strip())
-              port = u.port
-          except ValueError:
-              fail("is not a valid connection string.")
-          if u.scheme not in ("postgresql", "postgres"):
-              fail("must start with postgresql://")
-          if not u.hostname or not u.username or not u.password:
-              fail("must include a user, a password and a host.")
-          if PROD_REF not in (u.username + "@" + u.hostname):
-              fail("does not reference the production project. Refusing to back up a different database.")
-          if port == 6543:
-              fail("uses port 6543 (transaction pooler). pg_dump needs the session pooler on port 5432.")
-          for secret in {u.password, unquote(u.password)}:
-              print(f"::add-mask::{secret}")
-          print(f"Connection string OK: host={u.hostname} port={port or 5432}")
-          PY
+          python3 scripts/ci/prod-db-url.py check
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
