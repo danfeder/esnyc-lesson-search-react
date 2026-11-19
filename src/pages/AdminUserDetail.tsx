@@ -193,7 +193,9 @@ export function AdminUserDetail() {
           (r) => ({ ...r, action: r.action as AuditAction }) as UserManagementAudit
         );
         setAudit(rows);
-        const actorIds = Array.from(new Set(rows.map((r) => r.actor_id).filter(Boolean)));
+        const actorIds = Array.from(
+          new Set(rows.map((r) => r.actor_id).filter((actorId): actorId is string => !!actorId))
+        );
         if (actorIds.length > 0) {
           const { data: actorProfiles } = await supabase
             .from('user_profiles')

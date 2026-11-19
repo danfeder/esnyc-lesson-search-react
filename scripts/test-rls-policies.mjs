@@ -14,6 +14,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { execFileSync } from 'child_process';
+import { randomUUID } from 'crypto';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -82,6 +83,305 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     persistSession: false,
   },
 });
+
+// ---------------------------------------------------------------------------
+// Access-control hardening scenarios (migration *_access_control_hardening).
+//
+// These need real signed-in users in specific states (deactivated reviewer,
+// user with no profile, ...), so they create throwaway accounts with the
+// service role and remove them, and everything they wrote, afterwards.
+// ---------------------------------------------------------------------------
+const PROBE_RUN = `rlsprobe-${Date.now().toString(36)}`;
+const probeUserIds = [];
+const probeInvitationEmails = [];
+
+async function makeProbeUser(role, { withProfile = true } = {}) {
+  const email = `${PROBE_RUN}-${probeUserIds.length}-${role}@rls-probe.test.invalid`;
+  const password = `${randomUUID()}Aa1!`;
+  const { data, error } = await supabase.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  });
+  if (error) throw new Error(`createUser(${role}): ${error.message}`);
+  const id = data.user.id;
+  probeUserIds.push(id);
+  if (withProfile) {
+    const { error: profileError } = await supabase.from('user_profiles').insert({
+      id,
+      user_id: id,
+      email,
+      full_name: `RLS probe ${role}`,
+      role,
+      is_active: true,
+    });
+    if (profileError) throw new Error(`insert profile(${role}): ${profileError.message}`);
+  }
+  const client = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const { error: signInError } = await client.auth.signInWithPassword({ email, password });
+  if (signInError) throw new Error(`signIn(${role}): ${signInError.message}`);
+  return { id, email, client };
+}
+
+async function setProbeActive(id, isActive) {
+  const { error } = await supabase.from('user_profiles').update({ is_active: isActive }).eq('id', id);
+  if (error) throw new Error(`set is_active: ${error.message}`);
+}
+
+async function cleanupProbes() {
+  if (probeInvitationEmails.length > 0) {
+    await supabase.from('user_invitations').delete().in('email', probeInvitationEmails);
+  }
+  if (probeUserIds.length === 0) return;
+  await supabase.from('lesson_submissions').delete().in('teacher_id', probeUserIds);
+  await supabase.from('user_management_audit').delete().in('actor_id', probeUserIds);
+  // Deleting a profile cascades to the audit rows that target it.
+  await supabase.from('user_profiles').delete().in('id', probeUserIds);
+  for (const id of probeUserIds) {
+    await supabase.auth.admin.deleteUser(id);
+  }
+}
+
+function accessControlScenarios() {
+  const submissionRow = (teacherId, extra = {}) => ({
+    teacher_id: teacherId,
+    google_doc_url: `https://docs.google.com/document/d/${PROBE_RUN}`,
+    google_doc_id: PROBE_RUN,
+    submission_type: 'new',
+    status: 'submitted',
+    ...extra,
+  });
+
+  return [
+    {
+      // rls_posture_violations() lists: tables without RLS, views without
+      // security_invoker, anon write privileges, authenticated write privileges
+      // on views, and SECURITY DEFINER functions without a pinned search_path.
+      name: 'Schema posture check reports no violations',
+      test: async () => {
+        const { data, error } = await supabase.rpc('rls_posture_violations');
+        if (error) throw new Error(error.message);
+        for (const row of data) console.log(`    ⚠️  ${row.object_name}: ${row.problem}`);
+        return data.length === 0;
+      },
+    },
+    {
+      name: 'Posture check is not callable by anonymous or signed-in users',
+      test: async () => {
+        const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+        const { error: anonError } = await anonClient.rpc('rls_posture_violations');
+        const teacher = await makeProbeUser('teacher');
+        const { error: userError } = await teacher.client.rpc('rls_posture_violations');
+        return anonError !== null && userError !== null;
+      },
+    },
+    {
+      name: 'Anonymous cannot read user_profiles_safe',
+      test: async () => {
+        const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+        const { data, error } = await anonClient.from('user_profiles_safe').select('id').limit(1);
+        return error !== null && !data;
+      },
+    },
+    {
+      // The filter matches no row on purpose: a privilege error is raised
+      // before any row is considered, so this can never modify data.
+      name: 'Nobody can write through the lessons_with_metadata view',
+      test: async () => {
+        const anonClient = createClient(supabaseUrl, process.env.VITE_SUPABASE_ANON_KEY);
+        const reviewer = await makeProbeUser('reviewer');
+        const attempt = (client) =>
+          client
+            .from('lessons_with_metadata')
+            .update({ title: 'rls probe' })
+            .eq('lesson_id', `${PROBE_RUN}-no-such-lesson`);
+        const [{ error: anonError }, { error: reviewerError }] = await Promise.all([
+          attempt(anonClient),
+          attempt(reviewer.client),
+        ]);
+        return anonError !== null && reviewerError !== null;
+      },
+    },
+    {
+      name: 'Deactivating a reviewer removes reviewer access; own profile stays readable',
+      test: async () => {
+        const { data: lessons, error: lessonError } = await supabase
+          .from('lessons')
+          .select('lesson_id, flagged_for_review')
+          .limit(1);
+        if (lessonError) throw new Error(lessonError.message);
+        if (!lessons || lessons.length === 0) {
+          console.log('    ℹ️  Skipping: no lessons in this database');
+          return true;
+        }
+        const lesson = lessons[0];
+        const reviewer = await makeProbeUser('reviewer');
+        // Writes the value the row already has, so nothing changes.
+        const noOpUpdate = () =>
+          reviewer.client
+            .from('lessons')
+            .update({ flagged_for_review: lesson.flagged_for_review })
+            .eq('lesson_id', lesson.lesson_id)
+            .select('lesson_id');
+        const profiles = () => reviewer.client.from('user_profiles').select('id');
+
+        const activeUpdate = await noOpUpdate();
+        const activeProfiles = await profiles();
+        await setProbeActive(reviewer.id, false);
+        const inactiveUpdate = await noOpUpdate();
+        const inactiveProfiles = await profiles();
+        const inactiveSubmissions = await reviewer.client.from('lesson_submissions').select('id');
+
+        return (
+          !activeUpdate.error &&
+          activeUpdate.data.length === 1 &&
+          !activeProfiles.error &&
+          activeProfiles.data.length > 1 &&
+          !inactiveUpdate.error &&
+          inactiveUpdate.data.length === 0 &&
+          !inactiveProfiles.error &&
+          inactiveProfiles.data.length === 1 &&
+          inactiveProfiles.data[0].id === reviewer.id &&
+          !inactiveSubmissions.error &&
+          inactiveSubmissions.data.length === 0
+        );
+      },
+    },
+    {
+      name: 'A user can edit their own name but not role, user_id, email, notes or active flag',
+      test: async () => {
+        const teacher = await makeProbeUser('teacher');
+        const other = await makeProbeUser('teacher');
+        const update = (patch) =>
+          teacher.client.from('user_profiles').update(patch).eq('id', teacher.id).select('id');
+        const blocked = await Promise.all([
+          update({ role: 'admin' }),
+          update({ user_id: other.id }),
+          update({ email: `${PROBE_RUN}-changed@rls-probe.test.invalid` }),
+          update({ notes: 'self-written note' }),
+          update({ is_active: false }),
+        ]);
+        const allowed = await update({ full_name: 'RLS probe renamed' });
+        const { data: after } = await supabase
+          .from('user_profiles')
+          .select('role, user_id, is_active, notes, full_name')
+          .eq('id', teacher.id)
+          .single();
+        return (
+          blocked.every((r) => r.error !== null) &&
+          !allowed.error &&
+          allowed.data.length === 1 &&
+          after.role === 'teacher' &&
+          after.user_id === teacher.id &&
+          after.is_active === true &&
+          after.notes === null &&
+          after.full_name === 'RLS probe renamed'
+        );
+      },
+    },
+    {
+      name: 'Only an admin can write audit rows, and only naming themselves',
+      test: async () => {
+        const teacher = await makeProbeUser('teacher');
+        const reviewer = await makeProbeUser('reviewer');
+        const admin = await makeProbeUser('admin');
+        const row = (actorId) => ({
+          actor_id: actorId,
+          action: 'invite_sent',
+          target_email: `${PROBE_RUN}-audit@rls-probe.test.invalid`,
+        });
+        const asTeacher = await teacher.client.from('user_management_audit').insert(row(teacher.id));
+        const asReviewer = await reviewer.client.from('user_management_audit').insert(row(reviewer.id));
+        const adminAsOther = await admin.client.from('user_management_audit').insert(row(teacher.id));
+        const adminAsSelf = await admin.client.from('user_management_audit').insert(row(admin.id));
+        return (
+          asTeacher.error !== null &&
+          asReviewer.error !== null &&
+          adminAsOther.error !== null &&
+          adminAsSelf.error === null
+        );
+      },
+    },
+    {
+      name: 'A user can self-create only a teacher profile, even with a pending invitation',
+      test: async () => {
+        const inviter = await makeProbeUser('admin');
+        const invitedEmail = `${PROBE_RUN}-invited@rls-probe.test.invalid`;
+        probeInvitationEmails.push(invitedEmail);
+        const { error: inviteError } = await supabase.from('user_invitations').insert({
+          email: invitedEmail,
+          role: 'reviewer',
+          invited_by: inviter.id,
+        });
+        if (inviteError) throw new Error(`seed invitation: ${inviteError.message}`);
+
+        const newcomer = await makeProbeUser('teacher', { withProfile: false });
+        const profile = (extra) => ({
+          id: newcomer.id,
+          user_id: newcomer.id,
+          full_name: 'RLS probe newcomer',
+          ...extra,
+        });
+        const insert = (row) => newcomer.client.from('user_profiles').insert(row);
+        const claimInvite = await insert(profile({ role: 'reviewer', email: invitedEmail }));
+        const asAdmin = await insert(profile({ role: 'admin', email: newcomer.email }));
+        const otherEmail = await insert(profile({ role: 'teacher', email: invitedEmail }));
+        const withNotes = await insert(profile({ role: 'teacher', email: newcomer.email, notes: 'x' }));
+        const plainTeacher = await insert(profile({ role: 'teacher', email: newcomer.email }));
+        return (
+          claimInvite.error !== null &&
+          asAdmin.error !== null &&
+          otherEmail.error !== null &&
+          withNotes.error !== null &&
+          plainTeacher.error === null
+        );
+      },
+    },
+    {
+      name: 'A teacher-created submission must start empty, and needs an active profile',
+      test: async () => {
+        const teacher = await makeProbeUser('teacher');
+        const insert = (extra) =>
+          teacher.client.from('lesson_submissions').insert(submissionRow(teacher.id, extra));
+        const preApproved = await insert({ status: 'approved' });
+        const fakeContent = await insert({ extracted_content: 'not from the doc' });
+        const fakeReview = await insert({ reviewer_notes: 'looks great' });
+        const plain = await insert({});
+        await setProbeActive(teacher.id, false);
+        const whileInactive = await insert({});
+        return (
+          preApproved.error !== null &&
+          fakeContent.error !== null &&
+          fakeReview.error !== null &&
+          plain.error === null &&
+          whileInactive.error !== null
+        );
+      },
+    },
+    {
+      name: 'A profile change with no signed-in user is logged with a NULL actor',
+      test: async () => {
+        const teacher = await makeProbeUser('teacher');
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ full_name: 'RLS probe changed by service role' })
+          .eq('id', teacher.id);
+        if (updateError) throw new Error(updateError.message);
+        const { data, error } = await supabase
+          .from('user_management_audit')
+          .select('actor_id, metadata')
+          .eq('target_user_id', teacher.id)
+          .eq('action', 'user_profile_updated')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        if (error) throw new Error(error.message);
+        return data.length === 1 && data[0].actor_id === null && data[0].metadata?.source === 'service_role';
+      },
+    },
+  ];
+}
 
 /**
  * Test specific policy scenarios
@@ -276,6 +576,7 @@ async function testPolicyScenarios() {
         return !error && !!data && data.success === false && /insufficient permissions/i.test(data.error || '');
       },
     },
+    ...accessControlScenarios(),
   ];
 
   let passed = 0;
@@ -309,7 +610,16 @@ async function main() {
   console.log('================================');
 
   try {
-    const { passed, failed } = await testPolicyScenarios();
+    let passed;
+    let failed;
+    try {
+      ({ passed, failed } = await testPolicyScenarios());
+    } finally {
+      // Always remove the throwaway accounts and rows the scenarios created.
+      await cleanupProbes().catch((cleanupError) => {
+        console.error('⚠️  Probe cleanup failed:', cleanupError.message);
+      });
+    }
 
     console.log('\n================================');
     console.log('           SUMMARY');

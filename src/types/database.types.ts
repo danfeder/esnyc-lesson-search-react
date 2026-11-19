@@ -1187,7 +1187,7 @@ export type Database = {
       user_management_audit: {
         Row: {
           action: string;
-          actor_id: string;
+          actor_id: string | null;
           created_at: string;
           id: string;
           ip_address: unknown;
@@ -1200,7 +1200,7 @@ export type Database = {
         };
         Insert: {
           action: string;
-          actor_id: string;
+          actor_id?: string | null;
           created_at?: string;
           id?: string;
           ip_address?: unknown;
@@ -1213,7 +1213,7 @@ export type Database = {
         };
         Update: {
           action?: string;
-          actor_id?: string;
+          actor_id?: string | null;
           created_at?: string;
           id?: string;
           ip_address?: unknown;
@@ -1865,8 +1865,16 @@ export type Database = {
         Args: { p_user_id: string; required_role: string };
         Returns: boolean;
       };
+      is_active_user: { Args: never; Returns: boolean };
       is_admin: { Args: never; Returns: boolean } | { Args: { user_id: string }; Returns: boolean };
       is_reviewer_or_above: { Args: never; Returns: boolean };
+      rls_posture_violations: {
+        Args: never;
+        Returns: {
+          object_name: string;
+          problem: string;
+        }[];
+      };
       search_lessons: {
         Args: {
           filter_academic?: string[];

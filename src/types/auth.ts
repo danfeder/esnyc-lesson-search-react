@@ -117,7 +117,8 @@ interface AuditMetadata {
 // Audit log interface
 export interface UserManagementAudit {
   id: string;
-  actor_id: string;
+  /** NULL when the change was made with no signed-in user (backend job or direct SQL). */
+  actor_id: string | null;
   action: AuditAction;
   target_user_id?: string;
   target_email?: string;

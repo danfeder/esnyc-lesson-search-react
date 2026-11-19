@@ -38,6 +38,19 @@ describe('IntActivityTimeline', () => {
     expect(screen.getByText('actor-uuid')).toBeInTheDocument();
   });
 
+  it('shows "System" for a row with no actor, without calling resolveActor', () => {
+    const systemRow: UserManagementAudit = { ...baseRow, id: 'sys', actor_id: null };
+    render(
+      <IntActivityTimeline
+        rows={[systemRow]}
+        resolveActor={() => {
+          throw new Error('resolveActor must not be called for a null actor');
+        }}
+      />
+    );
+    expect(screen.getByText('System')).toBeInTheDocument();
+  });
+
   it('shows the target_email span only for invite_* actions', () => {
     const inviteSent: UserManagementAudit = {
       ...baseRow,

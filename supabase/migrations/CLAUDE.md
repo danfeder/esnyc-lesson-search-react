@@ -350,6 +350,26 @@ AS $$ ... $$ LANGUAGE plpgsql SECURITY DEFINER;
 USING (auth.uid() IS NOT NULL AND user_id = auth.uid())
 ```
 
+### Views Must Respect RLS
+A view runs with its owner's rights unless told otherwise, so it bypasses the row security of the tables underneath it. Always create views with `security_invoker`, and repeat the clause every time a view is redefined: `CREATE OR REPLACE VIEW` without it silently removes the option.
+```sql
+CREATE OR REPLACE VIEW public.my_view WITH (security_invoker = true) AS
+  SELECT ...;
+REVOKE INSERT, UPDATE, DELETE ON public.my_view FROM anon, authenticated;
+```
+
+### Check Roles With the Helpers, Not Inline
+Use `is_admin()`, `is_reviewer_or_above()`, `has_role(auth.uid(), '<role>')` or `is_active_user()` in policies. They require an ACTIVE account. Do not inline `EXISTS (SELECT 1 FROM user_profiles WHERE role = ...)`: that forgets `is_active`, so a deactivated account keeps its access.
+
+### SECURITY DEFINER Functions Pin Their search_path
+```sql
+CREATE FUNCTION public.my_fn() RETURNS ... LANGUAGE sql SECURITY DEFINER
+  SET search_path = public, pg_temp AS $$ ... $$;
+```
+
+### The Posture Check
+`public.rls_posture_violations()` (service role only) returns one row per table without RLS, view without `security_invoker`, anonymous write privilege, or SECURITY DEFINER function without a pinned search_path. `npm run test:rls` fails if it returns anything, so a migration that reintroduces one of these is caught in CI.
+
 ## Common Errors & Fixes
 
 | Error | Fix |
@@ -403,7 +423,7 @@ supabase db reset
 
 The CI pipeline uses these secrets:
 - `SUPABASE_ACCESS_TOKEN` - API access (edge-function deploys, TEST tooling)
-- `SUPABASE_DB_URL_PROD` - Production session-pooler connection string. Used by `migrate-production.yml` and `backup-production.yml`, which connect with `--db-url` instead of `supabase link` (the CLI's temporary login role is refused on production). Validated and masked by `scripts/ci/prod-db-url.py`
+- `SUPABASE_DB_URL_PROD` - Production session-pooler connection string. After changing it (for example after a database password reset), run the "Production Database Migration" workflow by hand: a manual run is a read-only connection check. Used by `migrate-production.yml` and `backup-production.yml`, which connect with `--db-url` instead of `supabase link` (the CLI's temporary login role is refused on production). Validated and masked by `scripts/ci/prod-db-url.py`
 - `BACKUP_ENCRYPTION_PASSPHRASE` - Encrypts the weekly production backup artifact; also kept outside GitHub, since backups cannot be restored without it
 - `SUPABASE_DB_PASSWORD_TEST` - Test database password
 - `SUPABASE_SERVICE_ROLE_KEY_TEST` - Test service role
