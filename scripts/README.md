@@ -17,6 +17,7 @@ Every script in this directory is either live tooling or a frozen reference inpu
 | `pr-surfaces.sh` | `bash scripts/pr-surfaces.sh <PR>` | Dumps all four PR-feedback surfaces | `.claude/commands/pr-triage.md` |
 | `deploy-edge-functions.sh`, `backup-database.sh`, `backup-remote-data.mjs` | manual | Deploy / backup helpers (sections below) | — |
 | `build-concepts-tool.py` + `concepts-worksheet-tool.template.html` | `python3 scripts/build-concepts-tool.py --verify-only \| --build-html` | Concepts worksheet wizard (`/concepts-batch2` reopen path) | `.claude/commands/concepts-batch2.md` |
+| `ci/prod-db-url.py` (+ `ci/prod-db-url.test.mjs`) | `python3 scripts/ci/prod-db-url.py check \| redact` | Validates, masks and redacts the production database URL for CI; refuses any project other than production | `.github/workflows/migrate-production.yml`, `backup-production.yml` |
 | `install_pkgs.sh`, `cloud-setup.sh` | SessionStart hook / environment setup script | npm install + Docker start in Claude Code cloud sessions only | `.claude/settings.json`; the cloud environment's Setup script field |
 | `lib/require-env.mjs`, `lib/grade-levels.mjs`, `lib/evalMetrics.ts` | imported | Shared helpers (`evalMetrics` is read by `search-eval/metrics.ts`) | the scripts above |
 
