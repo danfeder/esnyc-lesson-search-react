@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  ANY_ACTIVE_ROLE,
   bearerToken,
   isServiceRoleToken,
   requireUserWithRole,
@@ -10,7 +11,7 @@ const user = { id: 'user-1', email: 'reviewer@example.com' };
 
 function stubClient(opts: {
   getUser?: { data: { user: unknown }; error: unknown };
-  profile?: { role: string; full_name?: string | null } | null;
+  profile?: { role: string; full_name?: string | null; is_active?: boolean | null } | null;
 }): GateClient & { single: ReturnType<typeof vi.fn> } {
   const single = vi.fn(async () => ({ data: opts.profile ?? null, error: null }));
   return {
@@ -100,6 +101,44 @@ describe('requireUserWithRole', () => {
       user,
       role: 'admin',
       fullName: null,
+    });
+  });
+
+  it('fails with inactive when the profile is deactivated, even for an allowlisted role', async () => {
+    const client = stubClient({ profile: { role: 'admin', is_active: false } });
+    await expect(requireUserWithRole(client, 't', ['reviewer', 'admin'])).resolves.toEqual({
+      ok: false,
+      reason: 'inactive',
+    });
+  });
+
+  it('treats is_active true and NULL as active', async () => {
+    for (const is_active of [true, null]) {
+      const client = stubClient({ profile: { role: 'reviewer', is_active } });
+      await expect(requireUserWithRole(client, 't', ['reviewer'])).resolves.toMatchObject({
+        ok: true,
+        role: 'reviewer',
+      });
+    }
+  });
+
+  it('ANY_ACTIVE_ROLE admits every role with an active profile and refuses a deactivated one', async () => {
+    for (const role of ['teacher', 'reviewer', 'admin', 'super_admin']) {
+      const active = stubClient({ profile: { role, is_active: true } });
+      await expect(requireUserWithRole(active, 't', ANY_ACTIVE_ROLE)).resolves.toMatchObject({
+        ok: true,
+        role,
+      });
+    }
+    const deactivated = stubClient({ profile: { role: 'teacher', is_active: false } });
+    await expect(requireUserWithRole(deactivated, 't', ANY_ACTIVE_ROLE)).resolves.toEqual({
+      ok: false,
+      reason: 'inactive',
+    });
+    const noProfile = stubClient({ profile: null });
+    await expect(requireUserWithRole(noProfile, 't', ANY_ACTIVE_ROLE)).resolves.toEqual({
+      ok: false,
+      reason: 'no_profile',
     });
   });
 

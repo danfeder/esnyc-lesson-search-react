@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import Anthropic from '@anthropic-ai/sdk';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
+import { ANY_ACTIVE_ROLE, requireUserWithRole } from '../_shared/auth.ts';
 import type { MetadataSketch } from '../_shared/google-docs-parser.ts';
 import {
   ACTIVITY_TYPE_VALUES,
@@ -95,13 +96,24 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
-    // Get user - need to pass the JWT token
-    const {
-      data: { user: authUser },
-      error: userError,
-    } = await supabaseClient.auth.getUser(token);
-    if (userError || !authUser) throw new Error('Unauthorized');
-    user = authUser;
+    // Resolve the caller and require an ACTIVE profile. Everything below reads
+    // a Google Doc with the organisation's delegated reader and writes with the
+    // service-role client, so a deactivated account, or a signed-in user with no
+    // profile, must stop here. (The INSERT policy on lesson_submissions enforces
+    // the same for new rows; the resubmit path writes with the service role and
+    // relies on this check alone.)
+    const gate = await requireUserWithRole(supabaseAdmin, token, ANY_ACTIVE_ROLE);
+    if (!gate.ok) {
+      if (gate.reason === 'invalid_token') throw new Error('Unauthorized');
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Your account is not active. Please contact an administrator.',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+    user = gate.user;
 
     let submission;
     let title: string;

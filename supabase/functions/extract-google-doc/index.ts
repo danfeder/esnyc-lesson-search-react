@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 import { getGoogleAccessToken } from '../_shared/google-auth-with-delegation.ts';
 import { fetchDriveFileMetadata } from '../_shared/google-drive-metadata.ts';
 import {
@@ -7,7 +6,7 @@ import {
   extractMetadataFromContent,
 } from '../_shared/google-docs-parser.ts';
 import { getRestrictedCorsHeaders } from '../_shared/cors.ts';
-import { bearerToken, isServiceRoleToken, requireUserWithRole } from '../_shared/auth.ts';
+import { bearerToken, isServiceRoleToken } from '../_shared/auth.ts';
 
 interface ExtractRequest {
   googleDocUrl: string;
@@ -23,7 +22,12 @@ serve(async (req) => {
   }
 
   try {
-    // Require authentication — this function should only be invoked internally
+    // INTERNAL ONLY. This function reads a Google Doc with the organisation's
+    // delegated reader account and returns its text, so it must not be callable
+    // by end users: a signed-in user could otherwise hand it the address of any
+    // document that account can open. The only caller is process-submission,
+    // which authenticates the teacher itself and then calls here with the
+    // service-role key. A user token, however valid, is refused.
     const token = bearerToken(req);
     if (!token) {
       return new Response(
@@ -32,25 +36,18 @@ serve(async (req) => {
       );
     }
 
-    // Verify the caller is using service role key or a valid user token
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseServiceKey) {
       return new Response(
         JSON.stringify({ success: false, error: 'Server configuration error' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     if (!isServiceRoleToken(token, supabaseServiceKey)) {
-      // Verify user token (any authenticated user; no role requirement here).
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
-      const gate = await requireUserWithRole(supabase, token, null);
-      if (!gate.ok) {
-        return new Response(
-          JSON.stringify({ success: false, error: 'Invalid authentication token' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      return new Response(
+        JSON.stringify({ success: false, error: 'This endpoint is internal' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { googleDocUrl } = (await req.json()) as ExtractRequest;
