@@ -21,9 +21,13 @@ prod-db-url.test.mjs (runs in `npm run test:run`).
 """
 
 import os
+import re
 import sys
 from urllib.parse import quote, unquote, urlsplit
 
+# The production project ref. Also hard-coded in the workflows that use this
+# helper (migrate-production.yml `environment.url`, e2e.yml, backup-production.yml
+# manifest) and in e2e/utils/authFixture.ts; change them together.
 PROD_REF = "jxlxtzkmicfhchkhiojz"
 ENV_VAR = "SUPABASE_DB_URL_PROD"
 
@@ -64,15 +68,26 @@ def parse():
     return raw, url, port
 
 
+def _escape_case_variants(text):
+    """`text` with its percent-escapes in upper and in lower case (%2F / %2f)."""
+    return {
+        re.sub(r"%[0-9A-Fa-f]{2}", lambda m: m.group(0).upper(), text),
+        re.sub(r"%[0-9A-Fa-f]{2}", lambda m: m.group(0).lower(), text),
+    }
+
+
 def secret_forms(raw, url):
     """Every spelling of the secret that could appear in tool output.
 
     The password can be echoed as written in the URL, percent-decoded, or
-    re-encoded by a driver, so all three are covered. Longest first, so the
-    whole URL is replaced before the password inside it.
+    re-encoded by a driver (with upper- or lower-case hex), so all of those
+    are covered. Longest first, so the whole URL is replaced before the
+    password inside it.
     """
     decoded = unquote(url.password)
-    forms = {raw, url.password, decoded, quote(decoded, safe="")}
+    forms = {raw, url.password, decoded}
+    forms |= _escape_case_variants(url.password)
+    forms |= _escape_case_variants(quote(decoded, safe=""))
     return sorted((f for f in forms if f), key=len, reverse=True)
 
 

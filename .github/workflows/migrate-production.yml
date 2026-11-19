@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - 'supabase/migrations/**/*.sql'
+  # Manual run = connection check only. It runs the backup-freshness gate and
+  # the read-only dry-run against production, and NEVER the apply job (gated
+  # on `push` below). Use it to confirm the workflow can still reach
+  # production, e.g. after rotating SUPABASE_DB_URL_PROD or bumping the CLI.
+  workflow_dispatch:
 
 # Prevent concurrent production migrations
 concurrency:
@@ -26,7 +31,16 @@ jobs:
 
       - name: Check for new migrations
         id: check
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual run: connection check only (dry-run, no apply)."
+            echo "has_migrations=true" >> $GITHUB_OUTPUT
+            echo "migration_files=(manual connection check — no specific files)" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           # Handle edge cases: initial commits, force pushes, squash merges
           set +e
           MIGRATION_FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null | grep "supabase/migrations/.*\.sql$")
@@ -198,11 +212,18 @@ jobs:
           cat /tmp/migration-report/dry-run.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "⏸️ **Waiting for manual approval before applying to production...**" >> $GITHUB_STEP_SUMMARY
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "ℹ️ **Manual connection check — nothing will be applied.**" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⏸️ **Waiting for manual approval before applying to production...**" >> $GITHUB_STEP_SUMMARY
+          fi
         env:
           SUPABASE_DB_URL_PROD: ${{ secrets.SUPABASE_DB_URL_PROD }}
+          EVENT_NAME: ${{ github.event_name }}
 
       - name: Post dry-run as comment on the merged PR
+        # Push only: a manual connection check has no merged PR to report on.
+        if: github.event_name == 'push'
         # Find the PR that brought this commit to main and surface the dry-run
         # there. Approver gets a notification on that PR; reviewing the diff
         # next to the migrations is faster than digging through workflow logs.
@@ -293,7 +314,8 @@ jobs:
   apply-migrations:
     name: Apply to Production
     needs: [check-migrations, dry-run, verify-backup]
-    if: needs.check-migrations.outputs.has_migrations == 'true'
+    # `push` only: a manual (workflow_dispatch) run stops after the dry-run.
+    if: github.event_name == 'push' && needs.check-migrations.outputs.has_migrations == 'true'
     runs-on: ubuntu-latest
     environment:
       name: production

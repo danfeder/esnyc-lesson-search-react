@@ -5,7 +5,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'prod-db-url.py');
 const REF = 'jxlxtzkmicfhchkhiojz';
@@ -21,6 +21,15 @@ function run(mode, url, input = '') {
   const result = spawnSync('python3', [SCRIPT, mode], { env, input, encoding: 'utf8' });
   return { code: result.status, out: result.stdout, err: result.stderr };
 }
+
+beforeAll(() => {
+  const probe = spawnSync('python3', ['--version'], { encoding: 'utf8' });
+  if (probe.error || probe.status !== 0) {
+    throw new Error(
+      'scripts/ci/prod-db-url.test.mjs needs `python3` on PATH (the helper under test is a Python script).'
+    );
+  }
+});
 
 describe('prod-db-url.py check', () => {
   it('accepts the production session-pooler URL', () => {
@@ -79,13 +88,13 @@ describe('prod-db-url.py redact', () => {
       `connecting to ${url}`,
       'as written: p%40ss%2FWord9',
       'decoded: p@ss/Word9',
-      're-encoded lower-case hex differs, upper-case matches: p%40ss%2FWord9',
+      're-encoded with lower-case hex: p%40ss%2fWord9',
       'harmless line',
       '',
     ].join('\n');
     const { code, out } = run('redact', url, input);
     expect(code).toBe(0);
-    expect(out).not.toMatch(/p%40ss|p@ss\/Word9/);
+    expect(out).not.toMatch(/p%40ss|p@ss\/Word9|Word9/);
     expect(out).toContain('connecting to ***');
     expect(out).toContain('harmless line');
   });
