@@ -37,7 +37,9 @@ serve(async (req) => {
       );
     }
     if (!isServiceRoleToken(token, supabaseServiceKey)) {
-      // Pass null instead of a role list to accept any authenticated user.
+      // A role list also requires an ACTIVE profile. Pass ANY_ACTIVE_ROLE for
+      // "any signed-in user with an active profile". Passing null skips the
+      // profile lookup, and with it the active check: avoid it.
       const gate = await requireUserWithRole(supabase, token, ['reviewer', 'admin', 'super_admin']);
       if (!gate.ok) {
         const unauthenticated = gate.reason === 'invalid_token';
@@ -74,6 +76,8 @@ serve(async (req) => {
 
 - Use origin-restricted CORS via `getRestrictedCorsHeaders(origin)` from `../_shared/cors.ts` — never a literal `'*'`. Include the headers in ALL responses (including OPTIONS).
 - **Auth-gate in-code.** All functions deploy with `--no-verify-jwt`, so the platform does NOT authenticate the caller for you. Any function that uses the service-role key (which bypasses RLS) MUST gate access itself: constant-time-compare the bearer token against the service-role key for server-to-server callers, OR verify a user token + role. Use the helpers in `_shared/auth.ts` (`bearerToken`, `isServiceRoleToken`, `requireUserWithRole`); canonical adopter: `detect-duplicates/index.ts`.
+- **Deactivated accounts are refused.** `requireUserWithRole` with a role list rejects a profile whose `is_active` is `false` (reason `inactive`). Use `ANY_ACTIVE_ROLE` when any role will do; do not pass `null` for a function that does real work.
+- **A function that acts with shared credentials is internal.** If it reads or writes on behalf of the organisation rather than the caller (for example `extract-google-doc`, which reads Google Docs as the delegated reader), accept only the service-role key and let the calling function authenticate the user.
 - Use `Deno.env.get()` for secrets
 - Return JSON errors with proper status codes
 
@@ -81,7 +85,7 @@ serve(async (req) => {
 
 | Function | Status | Notes |
 |----------|--------|-------|
-| `extract-google-doc` | Working | Needs GOOGLE_SERVICE_ACCOUNT_JSON |
+| `extract-google-doc` | Working | **Internal only**: accepts the service-role key, refuses user tokens. Called by `process-submission`. Needs GOOGLE_SERVICE_ACCOUNT_JSON |
 | `detect-duplicates` | Working | pg_trgm text similarity (`find_similar_lessons_text`) + content-hash; embeddings retired (T4b) |
 | `process-submission` | Working | No embedding generation (retired T4b); `resubmit` mode for needs_revision rows |
 | `send-email` | Working | Needs RESEND_API_KEY |
